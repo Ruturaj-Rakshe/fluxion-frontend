@@ -9,9 +9,6 @@ class UserController {
     public async RegisterUser(req: Request, res: Response): Promise<void> {
         try {
             const data = ZodSchemas.RegisterUser.parse(req.body);
-
-            // const {name, email, password, role} = req.body;
-
             const existingUser = await prisma.user.findUnique({
                 where: { email: data.email }
             });
@@ -115,7 +112,6 @@ class UserController {
 
     async getUserProfile(req: Request, res: Response): Promise<void> {
         try {
-            // auth.ts -> token user ID -> 
             const userId = req.user?.id;
 
             if (!userId) {
