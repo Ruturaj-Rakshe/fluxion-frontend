@@ -23,7 +23,7 @@ export default function SignupFormDemo({EmailAddressText,PasswordText,NameText,R
     console.log("Form submitted");
   };
   return (
-    <div className="shadow-input mx-auto w-full max-w-md rounded-2xl bg-white p-4 md:rounded-2xl md:p-8 dark:bg-black">
+    <div className="shadow-input mx-auto w-full max-w-md rounded-2xl bg-slate-400 p-4 md:rounded-2xl md:p-8 dark:bg-black">
       <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200">
         {HeaderText}
       </h2>
