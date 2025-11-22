@@ -54,7 +54,6 @@ export default function Signup() {
             EmailAddressText="Email Address"
             NameText="Name"
             PasswordText="Password"
-            RoleText="Role"
             ButtonText="Sign Up"
             HeaderText="Create Your Account"
             TextBelowHeader="Start your free trial today. No credit card required."
