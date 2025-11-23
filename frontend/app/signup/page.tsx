@@ -2,9 +2,14 @@
 
 import ButtonFooter from "@/components/ButtonFooter"
 import SignupFormDemo from "@/components/SignupFormDemo"
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { authAPI } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function Signup() {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (window.innerWidth >= 1024) {
@@ -14,6 +19,28 @@ export default function Signup() {
       document.body.style.overflow = "auto";     // restore on exit
     };
   }, []);
+
+  const handleSignup = async (formData: { name: string; email: string; password: string }) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await authAPI.signup({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (response.token ) {
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err.message || "Signup failed. Please try again.");
+      console.error("Signup error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div
@@ -54,11 +81,13 @@ export default function Signup() {
             EmailAddressText="Email Address"
             NameText="Name"
             PasswordText="Password"
-            RoleText="Role"
             ButtonText="Sign Up"
             HeaderText="Create Your Account"
             TextBelowHeader="Start your free trial today. No credit card required."
             LoginText="Sign up using Google"
+            onSubmit={handleSignup}
+            error={error}
+            loading={loading}
           />
         </div>
       </div>

@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -9,19 +9,41 @@ interface SignupFormDemoProps {
   EmailAddressText: string;
   PasswordText: string;
   NameText?: string;
-  RoleText?: string;
   ButtonText: string;
   HeaderText: string;
   TextBelowHeader: string;
   LoginText: string;
-  
+  onSubmit?: (data: { name: string; email: string; password: string }) => Promise<void>;
+  error?: string;
+  loading?: boolean;
 }
 
-export default function SignupFormDemo({EmailAddressText,PasswordText,NameText,RoleText,ButtonText,HeaderText,TextBelowHeader,LoginText}: SignupFormDemoProps) {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+export default function SignupFormDemo({
+  EmailAddressText,
+  PasswordText,
+  NameText,
+  ButtonText,
+  HeaderText,
+  TextBelowHeader,
+  LoginText,
+  onSubmit,
+  error,
+  loading = false,
+}: SignupFormDemoProps) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Form submitted");
+    
+    if (onSubmit) {
+      await onSubmit({ name, email, password });
+    } else {
+      console.log("Form submitted", { name, email, password });
+    }
   };
+
   return (
     <div className="shadow-input mx-auto w-full max-w-md rounded-2xl bg-slate-400 p-4 md:rounded-2xl md:p-8 dark:bg-black">
       <h2 className="text-xl font-bold text-black dark:text-neutral-200">
@@ -31,36 +53,68 @@ export default function SignupFormDemo({EmailAddressText,PasswordText,NameText,R
         {TextBelowHeader}
       </p>
 
+      {error && (
+        <div className="mt-4 p-3 rounded-md bg-red-500/10 border border-red-500/50">
+          <p className="text-sm text-red-500">{error}</p>
+        </div>
+      )}
+
       <form className="my-8 top-2.5 " onSubmit={handleSubmit}>
         <div className="mb-4 flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2">
           {NameText && (
           <LabelInputContainer>
             <Label htmlFor="firstname">{NameText}</Label>
             
-            <Input id="firstname" className="cursor-pointer" placeholder="Tyler" type="text" />
+            <Input 
+              id="firstname" 
+              className="cursor-pointer" 
+              placeholder="Tyler" 
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required={!!NameText}
+            />
           </LabelInputContainer>
           )}
         </div>
         <LabelInputContainer className="mb-4">
           <Label htmlFor="email">{EmailAddressText}</Label>
-          <Input id="email" className="cursor-pointer" placeholder="projectmayhem@fc.com" type="email" />
+          <Input 
+            id="email" 
+            className="cursor-pointer" 
+            placeholder="projectmayhem@fc.com" 
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </LabelInputContainer>
-        {RoleText && (
+        {/* {RoleText && (
         <LabelInputContainer className="mb-4">
           <Label htmlFor="role">{RoleText}</Label>
           <Input id="role" className="cursor-pointer" type="text" />
         </LabelInputContainer>
-        )}
+        )} */}
         <LabelInputContainer className="mb-4">
           <Label htmlFor="password">{PasswordText}</Label>
-          <Input id="password" className="cursor-pointer" placeholder="••••••••" type="password" />
+          <Input 
+            id="password" 
+            className="cursor-pointer" 
+            placeholder="••••••••" 
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
         </LabelInputContainer>
 
         <button
-          className="group/btn cursor-pointer relative block h-10 w-full rounded-md bg-linear-to-br from-black to-neutral-600 bbh-sans-bartle font-medium text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-zinc-900 dark:to-zinc-900 dark:shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset]"
+          className="group/btn cursor-pointer relative block h-10 w-full rounded-md bg-linear-to-br from-black to-neutral-600 bbh-sans-bartle font-medium text-white shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:bg-zinc-800 dark:from-zinc-900 dark:to-zinc-900 dark:shadow-[0px_1px_0px_0px_#27272a_inset,0px_-1px_0px_0px_#27272a_inset] disabled:opacity-50 disabled:cursor-not-allowed"
           type="submit"
+          disabled={loading}
         >
-          {ButtonText}
+          {loading ? "Loading..." : ButtonText}
           <BottomGradient />
         </button>
 

@@ -2,8 +2,36 @@
 
 import ButtonFooter from "@/components/ButtonFooter"
 import SignupFormDemo from "@/components/SignupFormDemo"
+import { useState } from "react";
+import { authAPI } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function Signin() {
+    const router = useRouter();
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const handleSignin = async (formData: { email: string; password: string }) => {
+        setLoading(true);
+        setError("");
+
+        try {
+            const response = await authAPI.signin({
+                email: formData.email,
+                password: formData.password,
+            });
+
+            if(response.user) {
+                router.push("/dashboard");
+            }
+        } catch (err: any) {
+            setError(err.message || "Signin failed. Please try again.");
+            console.error("Signin error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="bg-black min-h-screen min-w-dvh py-20 px-4 flex items-center" 
             style={{ backgroundImage: "url('/signupbg.jpg')", backgroundSize: "cover", backgroundPosition: "center"  }}
@@ -32,7 +60,17 @@ export default function Signin() {
 
                 {/* Right Section - Form */}
                 <div className="-mt-9 lg:-mt-12">
-                    <SignupFormDemo EmailAddressText="Email Address" PasswordText="Password" ButtonText="Sign In" HeaderText="Welcome Back" TextBelowHeader="Glad to have you back" LoginText="Sign in using Google" />
+                    <SignupFormDemo 
+                        EmailAddressText="Email Address" 
+                        PasswordText="Password" 
+                        ButtonText="Sign In" 
+                        HeaderText="Welcome Back" 
+                        TextBelowHeader="Glad to have you back" 
+                        LoginText="Sign in using Google"
+                        onSubmit={handleSignin}
+                        error={error}
+                        loading={loading}
+                    />
                 </div>
 
             </div>
