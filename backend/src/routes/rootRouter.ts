@@ -1,6 +1,9 @@
 import express from "express";
 import userRoutes from "./userRoute.ts";
-import tempelateRoutes from "./tempelateRoute.ts";
+import tempelateRoutes from "./templateRoute.ts";
+import tempelateDetailRoutes from "./templateDetailRoute.ts";
+import cartRoutes from "./cartRoute.ts";
+
 class AppRoutes {
     public router = express.Router();
 
@@ -12,6 +15,8 @@ class AppRoutes {
     private registerRoutes() {
         this.router.use("/user", userRoutes);
         this.router.use("/templates", tempelateRoutes);
+        this.router.use("/template-details", tempelateDetailRoutes);
+        this.router.use("/cart", cartRoutes);
         // this.router.use("/products", productRoutes);
         // this.router.use("/orders", orderRoutes);
     }

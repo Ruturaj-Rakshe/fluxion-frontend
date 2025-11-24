@@ -19,8 +19,13 @@ model User {
   name      String
   role      Role     @default(USER)
   password  String
+
+  carts     Cart[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([email])
 }
 
 enum Role {
@@ -29,17 +34,54 @@ enum Role {
 }
 
 model Tempelate {
-  id        String   @id @default(cuid())
-  title     String
-  description   String
-  price    Float
-  thumbnailUrl String
-  isActive   TempelateStatus @default(ACTIVE)
+  id           String            @id @default(cuid())
+  title        String            @db.VarChar(200)
+  description  String            @db.Text
+  price        Float
+  imageUrl     String            @db.VarChar(500)
+  thumbnailUrl String            @db.VarChar(500)
+  isActive     TempelateStatus   @default(ACTIVE)
+  details      TempelateDetail?
+  carts        Cart[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([price])
 }
 
 enum TempelateStatus {
   ACTIVE
   INACTIVE
+}
+
+model TempelateDetail {
+  id             String   @id @default(cuid())
+  tempelateId    String   @unique
+  header         String   @db.VarChar(300)
+  headerSubtitle String   @db.VarChar(500)
+  features       String[]
+  benefits       String[]
+  tempelate      Tempelate @relation(fields: [tempelateId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+model Cart {
+  id          String   @id @default(cuid())
+  userId      String
+  tempelateId String
+  quantity    Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tempelate Tempelate @relation(fields: [tempelateId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tempelateId])
+  @@index([userId])
+  @@index([tempelateId])
 }

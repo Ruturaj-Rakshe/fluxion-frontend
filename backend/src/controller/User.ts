@@ -3,14 +3,20 @@ import ZodSchemas from '../lib/zodValidation.ts';
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import xss from "xss";
 
 class UserController {
 
 	public async RegisterUser(req: Request, res: Response): Promise<void> {
 		try {
 			const data = ZodSchemas.RegisterUser.parse(req.body);
+			
+			// Sanitize inputs to prevent XSS
+			const sanitizedEmail = xss(data.email.toLowerCase().trim());
+			const sanitizedName = data.name ? xss(data.name.trim()) : "";
+			
 			const existingUser = await prisma.user.findUnique({
-				where: { email: data.email }
+				where: { email: sanitizedEmail }
 			});
 
 			if (existingUser) {
@@ -18,13 +24,13 @@ class UserController {
 				return;
 			}
 
-			const hashedPassword = await bcrypt.hash(data.password, 10);
+			const hashedPassword = await bcrypt.hash(data.password, 12);
 
 			const user = await prisma.user.create({
 				data: {
-					email: data.email,
-					name: data.name || "",
-					role: data.role,
+					email: sanitizedEmail,
+					name: sanitizedName,
+					role: "USER", 
 					password: hashedPassword
 				}
 			});
@@ -33,18 +39,16 @@ class UserController {
 				throw new Error("JWT_SECRET is not configured");
 			}
 			const token = jwt.sign(
-				{ userId: user.id, email: user.email },
+				{ userId: user.id, email: user.email, role: user.role },
 				process.env.JWT_SECRET!,
 				{ expiresIn: "1h" }
 			);
-			res.cookie("auth_token", token, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === "production",
-				sameSite: "lax",
-				maxAge: 1000 * 60 * 60 * 24,
-			});
-
-			const { password, ...safeUser } = user;
+		res.cookie("auth_token", token, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			maxAge: 1000 * 60 * 60, // 1 hour
+		});			const { password, ...safeUser } = user;
 
 			res.status(201).json({ message: "User registered successfully", user: safeUser, token });
 
@@ -55,7 +59,8 @@ class UserController {
 				return;
 			}
 
-			res.status(500).json({ message: err.message });
+			console.error("Registration error:", err);
+			res.status(500).json({ message: "An error occurred during registration" });
 		}
 	}
 
@@ -83,39 +88,37 @@ class UserController {
 				return;
 			}
 
-			if (!process.env.JWT_SECRET) {
-				throw new Error("JWT_SECRET is not configured");
-			}
+		if (!process.env.JWT_SECRET) {
+			throw new Error("JWT_SECRET is not configured");
+		}
 
-			const token = jwt.sign(
-				{ userId: user.id, email: user.email },
-				process.env.JWT_SECRET,
-				{ expiresIn: "1h" }
-			);
-
-			res.cookie("auth_token", token, {
+		const token = jwt.sign(
+			{ userId: user.id, email: user.email, role: user.role },
+			process.env.JWT_SECRET,
+			{ expiresIn: "1h" }
+		);			
+		res.cookie("auth_token", token, {
 				httpOnly: true,
 				secure: process.env.NODE_ENV === "production",
 				sameSite: "lax",
-				maxAge: 1000 * 60 * 60 * 24, // 1 day
+				maxAge: 1000 * 60 * 60, // 1 hour
 				path: "/"
 			});
 
-			const { password, ...safeUser } = user;
-			res.status(200).json({ message: "User logged in successfully", user: safeUser, token });
+		const { password, ...safeUser } = user;
+		res.status(200).json({ message: "User logged in successfully", user: safeUser, token });
 
-		} catch (err: any) {
+	} catch (err: any) {
 
-			if (err.name === "ZodError") {
-				res.status(400).json({ errors: err.errors });
-				return;
-			}
-
-			res.status(500).json({ message: err.message });
+		if (err.name === "ZodError") {
+			res.status(400).json({ errors: err.errors });
+			return;
 		}
-	}
 
-	async LogoutUser(req: Request, res: Response): Promise<void> {
+		console.error("Login error:", err);
+		res.status(500).json({ message: "An error occurred during login" });
+	}
+}	async LogoutUser(req: Request, res: Response): Promise<void> {
 		try {
 			res.clearCookie("auth_token", {
 				httpOnly: true,
@@ -124,7 +127,8 @@ class UserController {
 			});
 			res.status(200).json({ message: "Logged out" });
 		} catch (err: any) {
-			res.status(500).json({ message: err.message });
+			console.error("Logout error:", err);
+			res.status(500).json({ message: "An error occurred during logout" });
 		}
 	}
 
@@ -171,19 +175,17 @@ class UserController {
 				return;
 			}
 
-			const data = ZodSchemas.UpdateUser.parse(req.body);
+		const data = ZodSchemas.UpdateUser.parse(req.body);
 
-			const updateData: any = {};
+		const updateData: any = {};
 
-			if (data.name !== undefined) {
-				updateData.name = data.name;
-			}
+		if (data.name !== undefined) {
+			updateData.name = xss(data.name.trim()); // Sanitize name
+		}
 
-			if (data.password) {
-				updateData.password = await bcrypt.hash(data.password, 10);
-			}
-
-			if (Object.keys(updateData).length === 0) {
+		if (data.password) {
+			updateData.password = await bcrypt.hash(data.password, 12);
+		}			if (Object.keys(updateData).length === 0) {
 				res.status(400).json({ message: "No valid fields to update" });
 				return;
 			}
@@ -285,9 +287,8 @@ class UserController {
 				return;
 			}
 
-			// Hide email unless viewing own profile
+			// Hide email unless viewing own profile 
 			const isOwnProfile = currentUserId === targetUserId;
-
 			// Get full user data to check role
 			const currentUser = currentUserId ? await prisma.user.findUnique({
 				where: { id: currentUserId },
@@ -328,7 +329,6 @@ class UserController {
 				where: { id: currentUserId },
 				select: { id: true, role: true }
 			});
-
 			if (!currentUser || currentUser.role !== "ADMIN") {
 				res.status(403).json({ message: "Forbidden: Admin access required" });
 				return;
@@ -380,6 +380,70 @@ class UserController {
 				message: "An error occurred while updating user role"
 			});
 		}
+	}
+
+	async getAllUsers(req: Request, res: Response): Promise<void> {
+		try {
+			// Pagination params
+			const page = Math.max(1, parseInt(req.query.page as string) || 1);
+			const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+			const skip = (page - 1) * limit;
+
+			// Search/filter params
+			const search = (req.query.search as string)?.trim() || "";
+			const role = req.query.role as string;
+
+			// Build where clause
+			const where: any = {};
+			
+			if (search) {
+				where.OR = [
+					{ email: { contains: search, mode: 'insensitive' } },
+					{ name: { contains: search, mode: 'insensitive' } }
+				];
+			}
+
+			if (role && ["USER", "ADMIN"].includes(role)) {
+				where.role = role;
+			}
+
+			// Get total count for pagination metadata
+			const total = await prisma.user.count({ where });
+
+			// Fetch paginated users
+			const users = await prisma.user.findMany({
+				where,
+				select: {
+					id: true,
+					email: true,
+					name: true,
+					role: true,
+					createdAt: true,
+					updatedAt: true,
+				},
+				skip,
+				take: limit,
+				orderBy: { createdAt: 'desc' }
+			});
+
+			res.status(200).json({
+				message: "Users fetched successfully",
+				users,
+				pagination: {
+					page,
+					limit,
+					total,
+					totalPages: Math.ceil(total / limit),
+					hasMore: skip + users.length < total
+				}
+			});
+		} catch (err: any) {
+			console.error("Error fetching all users:", err);
+			res.status(500).json({
+				message: "An error occurred while fetching users"
+			});
+		}
+
 	}
 
 }

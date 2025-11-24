@@ -16,8 +16,13 @@ class UserRoutes {
         this.router.get("/get-profile", AuthMiddleware.authenticateToken, userController.getUserProfile);
         this.router.put("/update-profile", AuthMiddleware.authenticateToken, userController.updateUserProfile);
         this.router.delete("/delete-account", AuthMiddleware.authenticateToken, userController.deleteUserAccount);
-        // this.router.post("/logout", AuthMiddleware.authenticateToken, userController.LogoutUser);
+        this.router.post("/logout", AuthMiddleware.authenticateToken, userController.LogoutUser);
         this.router.get("/get-user/:id", AuthMiddleware.authenticateToken, userController.getUserById);
+
+        // Admin-only routes
+        this.router.get("/get-all-users", AuthMiddleware.isAdmin, userController.getAllUsers);
+        this.router.put("/update-user-role/:id", AuthMiddleware.isAdmin, userController.updateUserRole);
+
     }
 }
 
