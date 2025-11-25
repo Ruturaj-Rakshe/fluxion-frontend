@@ -5,6 +5,7 @@ import SignupFormDemo from "@/components/SignupFormDemo"
 import { useState } from "react";
 import { authAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import ZodSchemas from "@/lib/zodValidation";
 
 export default function Signin() {
     const router = useRouter();
@@ -16,6 +17,10 @@ export default function Signin() {
         setError("");
 
         try {
+            const validatedFormData = ZodSchemas.LoginUser.safeParse(formData);
+            if(!validatedFormData.success){
+                return setError("Invalid signin data. Please check your inputs.");
+            }
             const response = await authAPI.signin({
                 email: formData.email,
                 password: formData.password,
