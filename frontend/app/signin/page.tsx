@@ -17,6 +17,7 @@ export default function Signin() {
         setError("");
 
         try {
+            // I added zod schema here..
             const validatedFormData = ZodSchemas.LoginUser.safeParse(formData);
             if(!validatedFormData.success){
                 return setError("Invalid signin data. Please check your inputs.");
