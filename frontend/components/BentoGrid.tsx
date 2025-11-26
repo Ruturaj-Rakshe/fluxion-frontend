@@ -147,25 +147,38 @@ export const BentoGrid = () => {
           id={5}
           onClick={(id, heading, content) => setCurrent({id, heading, content})}
           className="min-h-[180px] sm:min-h-[250px] sm:col-span-2"
-          heading="API HEALTH"
+          heading="REVENUE OVERVIEW"
         >
-          All services operational.
-          <ul className="mt-2 space-y-1 text-white/60">
-            <li>✓ Auth Service — Up</li>
-            <li>✓ Database — Up</li>
-            <li>✓ Notification Service — Up</li>
-          </ul>
+            Total Revenue: $5,430 this month.
         </BentoGridItem>
 
         <BentoGridItem
           id={6}
           onClick={(id, heading, content) => setCurrent({id, heading, content})}
           className="min-h-[180px] sm:min-h-[250px]"
-          heading="ALERTS"
+          heading="TEMPLATE STATS"
         >
-          No new alerts, we looking good!
+            150 templates created.
+        </BentoGridItem>
+
+        <BentoGridItem
+          id={8}
+          onClick={(id, heading, content) => setCurrent({id, heading, content})}
+          className="min-h-[180px] sm:min-h-[250px] sm:col-span-1"
+          heading="RECENT ORDERS"
+        >
+            23 orders placed today.
+        </BentoGridItem>
+
+        <BentoGridItem
+          id={7}
+          onClick={(id, heading, content) => setCurrent({id, heading, content})}
+          className="min-h-[180px] sm:min-h-[250px] col-span-1 sm:col-span-2"
+          heading="QUICK ACTIONS"
+        >
+            Create new admin, manage templates.
         </BentoGridItem>
       </div>
     </div>
-  );
+  );``
 };
