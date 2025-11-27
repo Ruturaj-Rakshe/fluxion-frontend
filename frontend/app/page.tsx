@@ -11,6 +11,7 @@ import Approach from '@/components/CanvasDemo';
 import { faqData } from '@/components/utils';
 import { DottedGlowBackgroundDemoSecond } from '@/components/DottedBack';
 import ScrollContext from './ScrollContext';
+import ButtonFooter from '@/components/ButtonFooter';
 
 
 
@@ -324,6 +325,9 @@ export default function Home() {
     speedMin={0.3}
     speedMax={3.2}
     speedScale={1}
+    firstString='Wanna level up your UI Game'
+    secondString='Explore our curated selection of stunning templates designed to kickstart your next project with style and efficiency.'
+    Button={<ButtonFooter title="Enter" href="/signup" />}
   />
 </section>
 

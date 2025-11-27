@@ -34,6 +34,9 @@ export type DottedGlowBackgroundProps = {
   speedMax?: number;
   /** global speed multiplier for all dots */
   speedScale?: number;
+  firstString?: string;
+  secondString?: string;
+  Button?: React.ReactNode;
 };
 
 /**
@@ -59,7 +62,6 @@ export function DottedGlowBackground({
   speedMin = 0.4,
   speedMax = 1.3,
   speedScale = 1,
-  
 }: DottedGlowBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);

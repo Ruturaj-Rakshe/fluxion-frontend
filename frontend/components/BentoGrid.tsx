@@ -1,98 +1,184 @@
-"use client";
-import React from "react";
-import { LayoutGrid } from "./ui/layout-grid";
+"use client"
 
-export function LayoutGridDemo() {
-  return (
-    <div className="h-screen py-20 w-full">
-      <LayoutGrid cards={cards} />
-    </div>
-  );
+import { useEffect, useRef, useState } from "react";
+import {motion} from "motion/react";
+
+export const BentoGridItem = ({id, onClick, className = "", children, heading, textColor = "text-white/35"} : 
+{id: number;
+onClick: (id: number, heading: string, content: React.ReactNode) => void;
+className?: string;
+children: React.ReactNode;
+heading: string;
+textColor?: string;
+}) => {
+    return (
+<motion.div tabIndex={0} 
+    layoutId={`card-${id}`}
+    onClick={() => onClick?.(id, heading, children)}
+    className={`
+    w-full
+    focus-visible:outline-none
+    focus-visible:ring-4
+    focus-visible:ring-indigo-500
+    focus-visible:ring-offset-2
+    focus-visible:ring-offset-[#04071D]
+    rounded-2xl group/bento
+    hover:shadow-xl transition duration-200
+    shadow-input dark:shadow-none p-4
+    bg-linear-to-br text-white
+    from-[#04071D] to-[#0C0E23]
+    border border-white/10
+    cursor-pointer
+    ${className}
+  `}
+>
+        
+        {heading && (
+  <h3 className="
+    mb-2 text-lg font-bold
+    transition duration-200
+    group-hover/bento:translate-x-2
+  ">
+    {heading}
+  </h3>
+)}
+
+<div className={`${textColor} transition duration-200 group-hover/bento:translate-x-2`}>
+  {children}
+</div>
+
+
+       
+</motion.div>
+    )
 }
 
-const SkeletonOne = () => {
-  return (
-    <div>
-      <p className="font-bold md:text-4xl text-xl text-white">
-        SkyView Explorer
-      </p>
-      <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        Explore the universe from your phone. View planets, stars, and constellations
-        in stunning 3D and learn fascinating facts about the cosmos.
-      </p>
-    </div>
-  );
-};
+const useOutsideClick = (callback: () => void) => {
+    const ref = useRef<HTMLDivElement>(null);;
 
-const SkeletonTwo = () => {
-  return (
-    <div>
-      <p className="font-bold md:text-4xl text-xl text-white">
-        TaskMaster Pro
-      </p>
-      <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        Stay organized and boost productivity with TaskMaster Pro. Plan tasks,
-        set reminders, and track your progress seamlessly.
-      </p>
-    </div>
-  );
-};
+    useEffect(() => {
+        const handleClick = (event: MouseEvent) => {
+            if (ref.current && !ref.current.contains(event.target as Node)) {
+                callback();
+            }
+        }
+        document.addEventListener("mousedown", handleClick);
+        return () => {
+            document.removeEventListener("mousedown", handleClick);
+        };
+    }, [callback]);
 
-const SkeletonThree = () => {
-  return (
-    <div>
-      <p className="font-bold md:text-4xl text-xl text-white">
-        GreenHabit Tracker
-      </p>
-      <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        Build and maintain sustainable habits. Track your eco-friendly actions
-        and see your impact grow over time with detailed insights.
-      </p>
-    </div>
-  );
-};
+    return ref;
+}
 
-const SkeletonFour = () => {
-  return (
-    <div>
-      <p className="font-bold md:text-4xl text-xl text-white">
-        FlowMusic Studio
-      </p>
-      <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        Create, mix, and share music on the go. FlowMusic Studio gives you
-        professional tools in a mobile-friendly app to bring your music ideas to life.
-      </p>
-    </div>
-  );
-};
+export const BentoGrid = () => {
+  const [current, setCurrent] = useState<{id: number; heading: string; content: React.ReactNode} | null>(null);
+  const reference = useOutsideClick(() => setCurrent(null));
 
-const cards = [
-  {
-    id: 1,
-    content: <SkeletonOne />,
-    className: "md:col-span-2",
-    thumbnail:
-      "https://images.unsplash.com/photo-1476231682828-37e571bc172f?q=80&w=3474&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    id: 2,
-    content: <SkeletonTwo />,
-    className: "col-span-1",
-    thumbnail:
-      "https://images.unsplash.com/photo-1464457312035-3d7d0e0c058e?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    id: 3,
-    content: <SkeletonThree />,
-    className: "col-span-1",
-    thumbnail:
-      "https://images.unsplash.com/photo-1588880331179-bc9b93a8cb5e?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    id: 4,
-    content: <SkeletonFour />,
-    className: "md:col-span-2",
-    thumbnail:
-      "https://images.unsplash.com/photo-1475070929565-c985b496cb9f?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-];
+  return (
+    <div className="mx-4 md:mx-12">
+      {/* overlay */}
+      {current && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.5 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-10 bg-black/50 backdrop-blur-sm"
+        />
+      )}
+
+      {/* modal */}
+      {current?.id && (
+        <motion.div
+          layoutId={`card-${current.id}`}
+          ref={reference}
+          className="
+            fixed inset-0 z-20
+            p-4 overflow-y-auto
+            bg-gradient-to-br from-[#04071D] to-[#0C0E23] border border-white/10
+            rounded-none w-full h-full
+            sm:rounded-2xl sm:w-[60vw] sm:h-[600px] sm:top-1/2 sm:left-1/2 sm:-translate-y-1/2 sm:-translate-x-1/2
+          "
+        >
+          <h1 className="text-2xl font-bold text-white">{current.heading}</h1>
+          <div className="text-sm text-white/70 pt-2">{current.content}</div>
+        </motion.div>
+      )}
+
+      {/* GRID — now EXACT layout restored */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <BentoGridItem
+          id={1}
+          onClick={(id, heading, content) => setCurrent({id, heading, content})}
+          className="min-h-[180px] sm:min-h-[200px] md:min-h-[250px] col-span-1 sm:col-span-3"
+          heading="ADMIN NOTES"
+        >
+          Welcome back admin! Here are your notes for today.
+        </BentoGridItem>
+
+        <BentoGridItem
+          id={2}
+          onClick={(id, heading, content) => setCurrent({id, heading, content})}
+          className="min-h-[180px] sm:min-h-[250px]"
+          heading="TOTAL USERS"
+        >
+          1,248 registered users.
+        </BentoGridItem>
+
+        <BentoGridItem
+          id={3}
+          onClick={(id, heading, content) => setCurrent({id, heading, content})}
+          className="min-h-[180px] sm:min-h-[250px]"
+          heading="ACTIVE SESSIONS"
+        >
+          83 users online right now.
+        </BentoGridItem>
+
+        <BentoGridItem
+          id={4}
+          onClick={(id, heading, content) => setCurrent({id, heading, content})}
+          className="min-h-[180px] sm:min-h-[250px]"
+          heading="NEW SIGNUPS"
+        >
+          12 new users today.
+        </BentoGridItem>
+
+        <BentoGridItem
+          id={5}
+          onClick={(id, heading, content) => setCurrent({id, heading, content})}
+          className="min-h-[180px] sm:min-h-[250px] sm:col-span-2"
+          heading="REVENUE OVERVIEW"
+        >
+            Total Revenue: $5,430 this month.
+        </BentoGridItem>
+
+        <BentoGridItem
+          id={6}
+          onClick={(id, heading, content) => setCurrent({id, heading, content})}
+          className="min-h-[180px] sm:min-h-[250px]"
+          heading="TEMPLATE STATS"
+        >
+            150 templates created.
+        </BentoGridItem>
+
+        <BentoGridItem
+          id={8}
+          onClick={(id, heading, content) => setCurrent({id, heading, content})}
+          className="min-h-[180px] sm:min-h-[250px] sm:col-span-1"
+          heading="RECENT ORDERS"
+        >
+            23 orders placed today.
+        </BentoGridItem>
+
+        <BentoGridItem
+          id={7}
+          onClick={(id, heading, content) => setCurrent({id, heading, content})}
+          className="min-h-[180px] sm:min-h-[250px] col-span-1 sm:col-span-2"
+          heading="QUICK ACTIONS"
+        >
+            Create new admin, manage templates.
+        </BentoGridItem>
+      </div>
+    </div>
+  );``
+};
