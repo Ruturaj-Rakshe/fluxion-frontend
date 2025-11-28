@@ -36,6 +36,7 @@ export function ThreeDCardDemo({ template, children, className }: ThreeDCardDemo
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     
     if (displayData.id === "default") return;
 
@@ -47,7 +48,7 @@ export function ThreeDCardDemo({ template, children, className }: ThreeDCardDemo
     try {
       setAdding(true);
       await addToCart(displayData.id, 1);
-      router.push("/cartPage");
+      alert("Added to cart successfully!");
     } catch (err: any) {
       console.error("Error adding to cart:", err);
       alert(err.response?.data?.message || "Failed to add to cart");
@@ -56,10 +57,17 @@ export function ThreeDCardDemo({ template, children, className }: ThreeDCardDemo
     }
   };
 
+  const handleCardClick = () => {
+    if (displayData.id !== "default") {
+      router.push(`/previewPage?id=${displayData.id}`);
+    }
+  };
+
   return (
-    <CardContainer className="inter-var">
-      <CardBody
-        className="bg-gray-50 relative group/card  dark:hover:shadow-2xl dark:hover:shadow-emerald-500/10 dark:bg-black dark:border-white/20 border-black/10 w-auto sm:w-120 h-auto rounded-xl p-6 border  ">
+    <div onClick={handleCardClick} className="cursor-pointer">
+      <CardContainer className="inter-var">
+        <CardBody
+          className="bg-gray-50 relative group/card dark:hover:shadow-2xl dark:hover:shadow-emerald-500/10 dark:bg-black dark:border-white/20 border-black/10 w-auto sm:w-120 h-auto rounded-xl p-6 border  ">
         <CardItem
           translateZ="50"
           className="text-xl font-bold text-neutral-600 dark:text-white">
@@ -95,5 +103,6 @@ export function ThreeDCardDemo({ template, children, className }: ThreeDCardDemo
         </div>
       </CardBody>
     </CardContainer>
+    </div>
   );
 }

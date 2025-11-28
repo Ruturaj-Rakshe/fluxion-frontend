@@ -65,16 +65,41 @@ function CartPageContent() {
 
   const updateQuantity = async (cartItemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
+    const previousItems = cartItems;
+    const previousSummary = summary;
+
+    const updatedItems = cartItems.map((it) =>
+      it.id === cartItemId ? { ...it, quantity: newQuantity } : it
+    );
+
+    // Recalculate summary locally
+    const updatedTotalItems = updatedItems.reduce((s, i) => s + i.quantity, 0);
+    const updatedTotalPrice = updatedItems.reduce(
+      (s, i) => s + i.quantity * i.tempelate.price,
+      0
+    );
+
+    setCartItems(updatedItems);
+    setSummary({
+      totalItems: updatedTotalItems,
+      totalPrice: updatedTotalPrice,
+      itemCount: updatedItems.length,
+    });
+
+    setUpdatingItems((prev) => new Set(prev).add(cartItemId));
 
     try {
-      setUpdatingItems(prev => new Set(prev).add(cartItemId));
       await cartAPI.updateCartItem(cartItemId, newQuantity);
-      await fetchCart(); // Refresh entire cart to get updated prices
+      // update navbar badge
+      await refreshCart();
     } catch (err: any) {
       console.error("Error updating quantity:", err);
       alert(err.response?.data?.message || "Failed to update quantity");
+      // revert to previous state
+      setCartItems(previousItems);
+      setSummary(previousSummary);
     } finally {
-      setUpdatingItems(prev => {
+      setUpdatingItems((prev) => {
         const newSet = new Set(prev);
         newSet.delete(cartItemId);
         return newSet;

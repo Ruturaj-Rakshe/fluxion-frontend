@@ -22,21 +22,22 @@ export function Navbar({ className }: { className?: string }) {
   };
 
   return (
-    <nav
-      className={cn(
-        "fixed top-0 inset-x-0 z-50 bbh-sans-bartle bg-black/60 backdrop-blur-lg rounded-2xl shadow-lg border border-white/10",
-        className
-      )}
-    >
-      {/* Navbar container */}
-      <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3 md:px-6">
+    <div className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 py-4">
+      <nav
+        className={cn(
+          "bbh-sans-bartle bg-black/60 backdrop-blur-lg rounded-2xl shadow-lg border border-white/10 max-w-5xl w-full",
+          className
+        )}
+      >
+        {/* Navbar container */}
+        <div className="flex items-center justify-between gap-6 px-6 py-4 md:px-8">
         {/* Brand */}
         <a href="/" className="text-white font-bold text-lg tracking-wide">
           Fluxion
         </a>
 
         {/* Desktop menu */}
-        <div className="hidden md:flex items-center space-x-6 text-white text-sm">
+        <div className="hidden md:flex items-center space-x-8 text-white text-sm">
           <Menu setActive={setActive}>
             <MenuItem setActive={setActive} active={active} item="Services">
               <div className="flex flex-col space-y-4 text-sm">
@@ -102,7 +103,7 @@ export function Navbar({ className }: { className?: string }) {
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center space-x-2 p-2 hover:bg-white/10 rounded-lg transition"
+                className="flex items-center space-x-0.5 p-2 hover:bg-white/10 rounded-lg transition"
               >
                 <User size={20} />
                 <span className="text-sm">{user?.name}</span>
@@ -141,9 +142,9 @@ export function Navbar({ className }: { className?: string }) {
           ) : (
             <button
               onClick={() => router.push("/signin")}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition"
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition text-center leading-tight"
             >
-              Sign In
+              Sign<br />in
             </button>
           )}
         </div>
@@ -218,9 +219,9 @@ export function Navbar({ className }: { className?: string }) {
                   router.push("/signin");
                   setIsOpen(false);
                 }}
-                className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition"
+                className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition text-center leading-tight"
               >
-                Sign In
+                Sign<br />in
               </button>
             </div>
           )}
@@ -248,6 +249,7 @@ export function Navbar({ className }: { className?: string }) {
           </div>
         </div>
       )}
-    </nav>
+      </nav>
+    </div>
   );
 }
