@@ -38,7 +38,7 @@ export default function Signup() {
       });
 
       if (response.token) {
-        router.push("/dashboard");
+        router.push("/");
       }
     } catch (err: any) {
       setError(err.message || "Signup failed. Please try again.");

@@ -36,7 +36,7 @@ export default function FilledwithCards() {
     return (
         <>  
             <Navbar/>
-            <div className="min-h-screen p-4">
+            <div className="min-h-screen p-4 ">
                 {loading && (
                     <div className="flex justify-center items-center min-h-[400px]">
                         <div className="text-white text-xl">Loading templates...</div>
@@ -56,7 +56,7 @@ export default function FilledwithCards() {
                 )}
                 
                 {!loading && !error && templates.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 mt-14">
                         {templates.map((template) => (
                             <ThreeDCardDemo key={template.id} template={template} />
                         ))}

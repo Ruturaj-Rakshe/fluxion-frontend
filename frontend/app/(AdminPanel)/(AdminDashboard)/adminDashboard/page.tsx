@@ -1,6 +1,6 @@
 import { DottedGlowBackgroundDemoSecond } from "@/components/DottedBack";
 import React from "react";
-import { BentoGrid } from "../../../../components/Bentogrid";
+import { BentoGrid } from "@/components/BentoGrid";
 
 export default function adminDashboard() {
   return (

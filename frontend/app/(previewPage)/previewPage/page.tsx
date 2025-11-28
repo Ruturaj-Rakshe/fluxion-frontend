@@ -20,6 +20,7 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
 
   useEffect(() => {
     async function fetchTemplateData() {
@@ -66,12 +67,32 @@ export default function PreviewPage() {
     try {
       setAddingToCart(true);
       await addToCart(templateId, 1);
-      router.push("/cartPage");
+      alert("Added to cart successfully!");
     } catch (err: any) {
       console.error("Error adding to cart:", err);
       alert(err.response?.data?.message || "Failed to add to cart");
     } finally {
       setAddingToCart(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!isAuthenticated) {
+      router.push("/signin");
+      return;
+    }
+
+    if (!templateId) return;
+
+    try {
+      setBuyingNow(true);
+      await addToCart(templateId, 1);
+      router.push("/cartPage");
+    } catch (err: any) {
+      console.error("Error adding to cart:", err);
+      alert(err.response?.data?.message || "Failed to add to cart");
+    } finally {
+      setBuyingNow(false);
     }
   };
 
@@ -97,7 +118,7 @@ export default function PreviewPage() {
 
       <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 px-6 lg:px-16">
         {/* Left Content */}
-        <div className="mt-20 lg:mt-32">
+        <div className="mt-20 lg:mt-36">
           <h1 className="font-extrabold text-white text-3xl lg:text-5xl leading-tight bbh-sans-bartle text-center lg:text-left">
             {templateDetail?.header || template.title}
           </h1>
@@ -109,11 +130,11 @@ export default function PreviewPage() {
 
             <div className="flex flex-wrap justify-center lg:justify-start gap-4">
               <button
-                onClick={handleAddToCart}
-                disabled={addingToCart}
+                onClick={handleBuyNow}
+                disabled={buyingNow}
                 className="px-8 py-3 bg-gradient-to-r from-zinc-900 via-black to-zinc-900 text-white font-semibold rounded-lg hover:from-zinc-800 hover:via-zinc-900 hover:to-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-white/20"
               >
-                {addingToCart ? "Adding..." : `Buy Now: $${template.price}`}
+                {buyingNow ? "Buying..." : `Buy Now: $${template.price}`}
               </button>
               <button
                 onClick={handleAddToCart}
