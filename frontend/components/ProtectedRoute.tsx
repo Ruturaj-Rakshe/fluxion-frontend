@@ -22,8 +22,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
 
   if (!isAuthenticated) {
-    //Put this line below, replacing => return null
-    router.push("/signin");
+    
+    return null;
   }
 
   return <>{children}</>;
