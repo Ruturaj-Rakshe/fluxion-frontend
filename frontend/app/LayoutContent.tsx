@@ -9,7 +9,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
   const pathname = usePathname();
 
 
-  const noFooter = ["/signin", "/signup", "/adminDashboard"];
+  const noFooter = ["/signin", "/signup", "/adminDashboard", "/settingsPage"];
 
   const hideFooter = noFooter.includes(pathname);
 
