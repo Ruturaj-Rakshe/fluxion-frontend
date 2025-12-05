@@ -16,7 +16,7 @@ class OrderRoutes {
         this.router.post("/checkout", AuthMiddleware.authenticateToken, OrderController.createOrder);
         
         // Get user's orders
-        this.router.get("/", AuthMiddleware.authenticateToken, OrderController.getUserOrders);
+        this.router.get("/get-all-orders", AuthMiddleware.authenticateToken, OrderController.getUserOrders);
         
         // Get specific order
         this.router.get("/:orderId", AuthMiddleware.authenticateToken, OrderController.getOrderById);

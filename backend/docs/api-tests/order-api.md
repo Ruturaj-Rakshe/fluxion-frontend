@@ -1,12 +1,13 @@
 # Order API Documentation
 
-Base URL: `http://localhost:3000/api/orders`
+Base URL: `http://localhost:8080/api/orders`
 
-**Note:** All order endpoints require authentication (JWT token in cookie or Authorization header).
+**Note:** All order endpoints require authentication (JWT token in httpOnly cookie).
 
 ## Order Endpoints
 
 ### 1. Create Order (Checkout)
+
 **Endpoint:** `POST /checkout`  
 **Auth Required:** Yes (User)  
 **Description:** Creates an order from the current user's cart items
@@ -34,9 +35,9 @@ Base URL: `http://localhost:3000/api/orders`
 
 **cURL Example:**
 ```bash
-curl -X POST "http://localhost:3000/api/orders/checkout" \
+curl -X POST "http://localhost:8080/api/orders/checkout" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>" \
+  -b cookies.txt \
   -d '{
     "paymentId": "pay_abc123xyz",
     "paymentRef": "ref_xyz789abc"
@@ -112,8 +113,8 @@ curl -X POST "http://localhost:3000/api/orders/checkout" \
 
 **cURL Example:**
 ```bash
-curl -X GET "http://localhost:3000/api/orders" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X GET "http://localhost:8080/api/orders" \
+  -b cookies.txt
 ```
 
 **Success Response (200):**
@@ -181,8 +182,8 @@ curl -X GET "http://localhost:3000/api/orders" \
 
 **cURL Example:**
 ```bash
-curl -X GET "http://localhost:3000/api/orders/clxorder123" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X GET "http://localhost:8080/api/orders/clxorder123" \
+  -b cookies.txt
 ```
 
 **Success Response (200):**
@@ -273,8 +274,8 @@ curl -X GET "http://localhost:3000/api/orders/clxorder123" \
 
 **cURL Example:**
 ```bash
-curl -X PUT "http://localhost:3000/api/orders/clxorder123/cancel" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X PUT "http://localhost:8080/api/orders/clxorder123/cancel" \
+  -b cookies.txt
 ```
 
 **Success Response (200):**
@@ -345,9 +346,9 @@ curl -X PUT "http://localhost:3000/api/orders/clxorder123/cancel" \
 
 **cURL Example:**
 ```bash
-curl -X PUT "http://localhost:3000/api/orders/clxorder123/status" \
+curl -X PUT "http://localhost:8080/api/orders/clxorder123/status" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<ADMIN_TOKEN>" \
+  -b admin-cookies.txt \
   -d '{"status":"COMPLETED"}'
 ```
 
@@ -431,17 +432,17 @@ PENDING → CANCELLED (via user or admin)
 ### Step 1: Add items to cart
 ```bash
 # Add template to cart
-curl -X POST "http://localhost:3000/api/cart/add" \
+curl -X POST "http://localhost:8080/api/cart/add" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>" \
+  -b cookies.txt \
   -d '{"tempelateId":"clxtemplate123","tempelateDetailId":"clxdetail456","quantity":2}'
 ```
 
 ### Step 2: View cart
 ```bash
 # Check cart before checkout
-curl -X GET "http://localhost:3000/api/cart" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X GET "http://localhost:8080/api/cart" \
+  -b cookies.txt
 ```
 
 ### Step 3: Process payment (external)
@@ -453,9 +454,9 @@ curl -X GET "http://localhost:3000/api/cart" \
 ### Step 4: Create order (checkout)
 ```bash
 # Checkout with payment info
-curl -X POST "http://localhost:3000/api/orders/checkout" \
+curl -X POST "http://localhost:8080/api/orders/checkout" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>" \
+  -b cookies.txt \
   -d '{
     "paymentId": "pay_abc123xyz",
     "paymentRef": "ref_xyz789abc"
@@ -465,30 +466,30 @@ curl -X POST "http://localhost:3000/api/orders/checkout" \
 ### Step 5: View orders
 ```bash
 # Get all user orders
-curl -X GET "http://localhost:3000/api/orders" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X GET "http://localhost:8080/api/orders" \
+  -b cookies.txt
 ```
 
 ### Step 6: View order details
 ```bash
 # Get specific order
-curl -X GET "http://localhost:3000/api/orders/clxorder123" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X GET "http://localhost:8080/api/orders/clxorder123" \
+  -b cookies.txt
 ```
 
 ### Step 7 (Optional): Cancel order
 ```bash
 # Cancel if payment failed or user requested
-curl -X PUT "http://localhost:3000/api/orders/clxorder123/cancel" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X PUT "http://localhost:8080/api/orders/clxorder123/cancel" \
+  -b cookies.txt
 ```
 
 ### Step 8 (Admin): Update status
 ```bash
 # Admin marks as completed after payment confirmation
-curl -X PUT "http://localhost:3000/api/orders/clxorder123/status" \
+curl -X PUT "http://localhost:8080/api/orders/clxorder123/status" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<ADMIN_TOKEN>" \
+  -b admin-cookies.txt \
   -d '{"status":"COMPLETED"}'
 ```
 

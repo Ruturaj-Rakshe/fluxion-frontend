@@ -1,6 +1,6 @@
 # User API Documentation
 
-Base URL: `http://localhost:3000/api/user`
+Base URL: `http://localhost:8080/api/user`
 
 ## Authentication APIs
 
@@ -18,25 +18,25 @@ Base URL: `http://localhost:3000/api/user`
 }
 ```
 
-**Success Response (201):**
+**Success Response (200):**
 ```json
 {
-  "message": "User registered successfully",
+  "message": "User created successfully",
   "user": {
     "id": "clx1234567890",
     "email": "user@example.com",
     "name": "John Doe",
     "role": "USER",
+    "isEmailVerified": false,
     "createdAt": "2025-11-21T10:00:00.000Z",
     "updatedAt": "2025-11-21T10:00:00.000Z"
-  },
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
 }
 ```
 
 **cURL Example:**
 ```bash
-curl -X POST "http://localhost:3000/api/user/signup" \
+curl -X POST "http://localhost:8080/api/user/signup" \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","name":"John Doe","password":"password123"}'
 ```
@@ -49,67 +49,76 @@ curl -X POST "http://localhost:3000/api/user/signup" \
 ---
 
 ### 2. Login User (Sign In)
+
 **Endpoint:** `POST /signin`  
 **Auth Required:** No  
-**Description:** Authenticate existing user and get JWT token
+**Description:** Authenticate existing user and get JWT token (sets httpOnly cookie)
 
 **Request Body:**
 ```json
 {
   "email": "user@example.com",
-  "password": "password123"
+  "password": "NewSecurePass123"
 }
+
 ```
 
 **Success Response (200):**
 ```json
 {
-  "message": "User logged in successfully",
+  "message": "Signin successful",
   "user": {
     "id": "clx1234567890",
     "email": "user@example.com",
     "name": "John Doe",
     "role": "USER",
+    "isEmailVerified": false,
     "createdAt": "2025-11-21T10:00:00.000Z",
     "updatedAt": "2025-11-21T10:00:00.000Z"
-  },
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
 }
 ```
 
 **cURL Example:**
 ```bash
-curl -X POST "http://localhost:3000/api/user/signin" \
+curl -X POST "http://localhost:5000/api/user/signin" \
   -H "Content-Type: application/json" \
+  -c cookies.txt \
   -d '{"email":"user@example.com","password":"password123"}'
 ```
 
-**Note:** Save the `token` from response - you'll need it for protected endpoints.
+**Note:** Auth token is set as httpOnly cookie. Save cookies using `-c cookies.txt` and use with `-b cookies.txt`
 
 ---
 
 ## User Profile APIs
 
 ### 3. Get User Profile
+
 **Endpoint:** `GET /get-profile`  
 **Auth Required:** Yes (JWT Token)  
 **Description:** Get current logged-in user's profile
 
 **cURL Example:**
 ```bash
-curl -X GET "http://localhost:3000/api/user/get-profile" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X GET "http://localhost:8080/api/user/get-profile" \
+  -b cookies.txt
 ```
 
 **Success Response (200):**
 ```json
 {
-  "message": "User profile fetched successfully",
+  "message": "Profile fetched successfully",
   "user": {
     "id": "clx1234567890",
     "email": "user@example.com",
     "name": "John Doe",
+    "organization": "Tech Corp",
+    "contactNumber": "+1234567890",
+    "address": "123 Main St",
+    "avatarUrl": "https://example.com/avatar.jpg",
     "role": "USER",
+    "isEmailVerified": true,
     "createdAt": "2025-11-21T10:00:00.000Z",
     "updatedAt": "2025-11-21T10:00:00.000Z"
   }
@@ -119,34 +128,39 @@ curl -X GET "http://localhost:3000/api/user/get-profile" \
 ---
 
 ### 4. Update User Profile
+
 **Endpoint:** `PUT /update-profile`  
 **Auth Required:** Yes (JWT Token)  
-**Description:** Update current user's name or password
+**Description:** Update current user's profile (name, organization, contact, address, avatar)
 
-**Request Body (partial):**
+**Request Body (all fields optional):**
 ```json
 {
   "name": "John Updated",
-  "password": "newpassword123"
+  "organization": "Tech Corp",
+  "contactNumber": "+1234567890",
+  "address": "456 New Ave",
+  "avatarUrl": "https://example.com/new-avatar.jpg"
 }
 ```
 
 **cURL Example:**
 ```bash
-curl -X PUT "http://localhost:3000/api/user/update-profile" \
+curl -X PUT "http://localhost:8080/api/user/update-profile" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>" \
-  -d '{"name":"John Updated"}'
+  -b cookies.txt \
+  -d '{"name":"John Updated","organization":"Tech Corp"}'
 ```
 
 **Success Response (200):**
 ```json
 {
-  "message": "User profile updated successfully",
+  "message": "Profile updated successfully",
   "user": {
     "id": "clx1234567890",
     "email": "user@example.com",
     "name": "John Updated",
+    "organization": "Tech Corp",
     "role": "USER",
     "createdAt": "2025-11-21T10:00:00.000Z",
     "updatedAt": "2025-11-21T10:05:00.000Z"
@@ -156,44 +170,154 @@ curl -X PUT "http://localhost:3000/api/user/update-profile" \
 
 ---
 
-### 5. Delete User Account
-**Endpoint:** `DELETE /delete-account`  
-**Auth Required:** Yes (JWT Token)  
-**Description:** Delete current user's account (requires password confirmation)
+## Email Verification APIs
 
-**Request Body:**
-```json
-{
-  "password": "current_password"
-}
-```
+### 5. Send Email Verification OTP
+**Endpoint:** `POST /send-verification-email`  
+**Auth Required:** Yes (JWT Token)  
+**Description:** Send a 6-digit OTP to user's email for verification
 
 **cURL Example:**
 ```bash
-curl -X DELETE "http://localhost:3000/api/user/delete-account" \
-  -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>" \
-  -d '{"password":"current_password"}'
+curl -X POST "http://localhost:8080/api/user/send-verification-email" \
+  -b cookies.txt
 ```
 
 **Success Response (200):**
 ```json
 {
-  "message": "User account deleted successfully"
+  "message": "Verification email sent successfully"
 }
 ```
 
+**Error Responses:**
+- `400` - Email already verified
+- `429` - Too many requests (rate limited)
+- `500` - Email sending failed
+
+**Note:** OTP is valid for 10 minutes
+
 ---
 
-### 6. Logout User
+### 6. Verify Email with OTP
+**Endpoint:** `POST /verify-email`  
+**Auth Required:** Yes (JWT Token)  
+**Description:** Verify email address using the OTP sent via email
+
+**Request Body:**
+```json
+{
+  "otp": "123456"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST "http://localhost:8080/api/user/verify-email" \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{"otp":"123456"}'
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Email verified successfully",
+  "user": {
+    "id": "clx1234567890",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "isEmailVerified": true,
+    "role": "USER"
+  }
+}
+```
+
+**Error Responses:**
+- `400` - Invalid or expired OTP
+- `400` - Email already verified
+- `429` - Too many requests
+
+---
+
+## Password Reset APIs
+
+### 7. Request Password Reset
+**Endpoint:** `POST /forgot-password`  
+**Auth Required:** No  
+**Description:** Send password reset link to user's email
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST "http://localhost:8080/api/user/forgot-password" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com"}'
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Password reset email sent"
+}
+```
+
+**Error Responses:**
+- `429` - Too many requests (rate limited - 3 per 15 minutes)
+- `500` - Email sending failed
+
+**Note:** Reset token is valid for 1 hour. Check email for reset link.
+
+---
+
+### 8. Reset Password
+**Endpoint:** `POST /reset-password`  
+**Auth Required:** No  
+**Description:** Reset password using the token from email
+
+**Request Body:**
+```json
+{
+  "token": "reset_token_from_email",
+  "newPassword": "NewSecurePass123!"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST "http://localhost:8080/api/user/reset-password" \
+  -H "Content-Type: application/json" \
+  -d '{"token":"abc123xyz...","newPassword":"NewSecurePass123!"}'
+```
+
+**Success Response (200):**
+```json
+{
+  "message": "Password reset successful"
+}
+```
+
+**Error Responses:**
+- `400` - Invalid or expired token
+- `400` - Password validation failed
+
+---
+
+### 9. Logout User
 **Endpoint:** `POST /logout`  
 **Auth Required:** Yes (JWT Token)  
 **Description:** Logout user and clear auth cookie
 
 **cURL Example:**
 ```bash
-curl -X POST "http://localhost:3000/api/user/logout" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X POST "http://localhost:8080/api/user/logout" \
+  -b cookies.txt
 ```
 
 **Success Response (200):**
@@ -207,10 +331,10 @@ curl -X POST "http://localhost:3000/api/user/logout" \
 
 ## User Management APIs (Admin Only)
 
-### 7. Get All Users
+### 10. Get All Users
 **Endpoint:** `GET /get-all-users`  
 **Auth Required:** Yes (Admin)  
-**Description:** Get paginated list of all users
+**Description:** Get paginated list of all users (admin only)
 
 **Query Parameters:**
 - `page` (optional): Page number (default: 1)
@@ -220,8 +344,8 @@ curl -X POST "http://localhost:3000/api/user/logout" \
 
 **cURL Example:**
 ```bash
-curl -X GET "http://localhost:3000/api/user/get-all-users?page=1&limit=20&search=john" \
-  -H "Cookie: auth_token=<YOUR_ADMIN_TOKEN>"
+curl -X GET "http://localhost:8080/api/user/get-all-users?page=1&limit=20&search=john" \
+  -b admin-cookies.txt
 ```
 
 **Success Response (200):**
@@ -234,6 +358,7 @@ curl -X GET "http://localhost:3000/api/user/get-all-users?page=1&limit=20&search
       "email": "user@example.com",
       "name": "John Doe",
       "role": "USER",
+      "isEmailVerified": true,
       "createdAt": "2025-11-21T10:00:00.000Z",
       "updatedAt": "2025-11-21T10:00:00.000Z"
     }
@@ -250,15 +375,15 @@ curl -X GET "http://localhost:3000/api/user/get-all-users?page=1&limit=20&search
 
 ---
 
-### 8. Get User By ID
+### 11. Get User By ID
 **Endpoint:** `GET /get-user/:id`  
 **Auth Required:** Yes (JWT Token)  
-**Description:** Get any user's profile by ID (email hidden unless viewing own profile or admin)
+**Description:** Get any user's profile by ID
 
 **cURL Example:**
 ```bash
-curl -X GET "http://localhost:3000/api/user/get-user/clx1234567890" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X GET "http://localhost:8080/api/user/get-user/clx1234567890" \
+  -b cookies.txt
 ```
 
 **Success Response (200):**
@@ -270,6 +395,7 @@ curl -X GET "http://localhost:3000/api/user/get-user/clx1234567890" \
     "email": "user@example.com",
     "name": "John Doe",
     "role": "USER",
+    "isEmailVerified": true,
     "createdAt": "2025-11-21T10:00:00.000Z",
     "updatedAt": "2025-11-21T10:00:00.000Z"
   }
@@ -278,7 +404,7 @@ curl -X GET "http://localhost:3000/api/user/get-user/clx1234567890" \
 
 ---
 
-### 9. Update User Role
+### 12. Update User Role
 **Endpoint:** `PUT /update-user-role/:id`  
 **Auth Required:** Yes (Admin)  
 **Description:** Change a user's role (admin only, cannot change own role)
@@ -292,9 +418,9 @@ curl -X GET "http://localhost:3000/api/user/get-user/clx1234567890" \
 
 **cURL Example:**
 ```bash
-curl -X PUT "http://localhost:3000/api/user/update-user-role/clx1234567890" \
+curl -X PUT "http://localhost:8080/api/user/update-user-role/clx1234567890" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_ADMIN_TOKEN>" \
+  -b admin-cookies.txt \
   -d '{"role":"ADMIN"}'
 ```
 
@@ -320,8 +446,35 @@ curl -X PUT "http://localhost:3000/api/user/update-user-role/clx1234567890" \
 
 ---
 
-## Notes
+## Rate Limiting
 
-- **Authentication**: Most endpoints use httpOnly cookies (`auth_token`) for auth. You can also use `Authorization: Bearer <token>` header.
-- **Role System**: Only `USER` and `ADMIN` roles exist. Registration always creates USER role.
-- **Admin Access**: Admin users must be created via seed script or role update by another admin.
+The following rate limits are applied:
+
+- **General endpoints**: 100 requests per 15 minutes
+- **Auth endpoints** (signup, signin): 10 requests per 15 minutes  
+- **Password reset**: 3 requests per 15 minutes
+- **Email verification**: Rate limited per endpoint
+
+---
+
+## Security Notes
+
+- **Authentication**: Uses httpOnly cookies for JWT tokens (more secure than localStorage)
+- **Password Security**: Passwords hashed with bcrypt (12 rounds)
+- **OTP Security**: OTPs hashed with bcrypt (10 rounds), 10-minute expiry
+- **Reset Tokens**: Tokens hashed with bcrypt (10 rounds), 1-hour expiry
+- **XSS Protection**: All user inputs are sanitized
+- **Timing Attacks**: Password reset uses constant-time delay to prevent email enumeration
+
+---
+
+## Testing Workflow
+
+1. **Register** a new user
+2. **Login** to get auth cookie
+3. **Send verification email** and verify with OTP
+4. **Update profile** with additional info
+5. Test **password reset** flow
+6. Login as **admin** (use seeded admin account)
+7. Test **admin endpoints** (get users, update roles)
+8. **Logout** when done

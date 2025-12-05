@@ -21,8 +21,41 @@ class ZodSchemas {
     name: z.string().min(1).max(100, "Name must not exceed 100 characters").optional(),
     email: z.string().email().max(255, "Email must not exceed 255 characters").optional(),
     password: z.string().min(6, "Password must be at least 6 characters").max(100, "Password must not exceed 100 characters").optional(),
-  }).refine(data => data.name !== undefined || data.password !== undefined, {
-    message: "At least one field (name or password) must be provided"
+    organization: z.string().max(200, "Organization must not exceed 200 characters").optional(),
+    contactNumber: z.string().max(50, "Contact number must not exceed 50 characters").optional(),
+    address: z.string().max(500, "Address must not exceed 500 characters").optional(),
+    avatarUrl: z.string().url("Invalid avatar URL").max(500, "Avatar URL must not exceed 500 characters").optional(),
+  }).refine(data => 
+    data.name !== undefined || 
+    data.email !== undefined ||
+    data.password !== undefined || 
+    data.organization !== undefined || 
+    data.contactNumber !== undefined || 
+    data.address !== undefined || 
+    data.avatarUrl !== undefined, {
+    message: "At least one field must be provided"
+  });
+
+  public static ChangePassword = z.object({
+    currentPassword: z.string().min(6, "Current password must be at least 6 characters").max(100, "Current password must not exceed 100 characters"),
+    newPassword: z.string().min(6, "New password must be at least 6 characters").max(100, "New password must not exceed 100 characters"),
+  });
+
+  public static ForgotPassword = z.object({
+    email: z.string().email("Invalid email address").max(255, "Email must not exceed 255 characters"),
+  });
+
+  public static ResetPassword = z.object({
+    token: z.string().min(1, "Reset token is required"),
+    newPassword: z.string().min(6, "Password must be at least 6 characters").max(100, "Password must not exceed 100 characters"),
+  });
+
+  public static SendVerificationEmail = z.object({
+    email: z.string().email("Invalid email address").max(255, "Email must not exceed 255 characters"),
+  });
+
+  public static VerifyEmail = z.object({
+    otp: z.string().length(6, "OTP must be exactly 6 digits").regex(/^[0-9]+$/, "OTP must contain only numbers"),
   });
 
   // Template Schema
@@ -122,3 +155,6 @@ export type OrderType = z.infer<typeof ZodSchemas.OrderSchema>;
 export type OrderItemType = z.infer<typeof ZodSchemas.OrderItemSchema>;
 export type CreateOrderType = z.infer<typeof ZodSchemas.CreateOrderSchema>;
 export type UpdateOrderStatusType = z.infer<typeof ZodSchemas.UpdateOrderStatusSchema>;
+export type ChangePasswordType = z.infer<typeof ZodSchemas.ChangePassword>;
+export type ForgotPasswordType = z.infer<typeof ZodSchemas.ForgotPassword>;
+export type ResetPasswordType = z.infer<typeof ZodSchemas.ResetPassword>;

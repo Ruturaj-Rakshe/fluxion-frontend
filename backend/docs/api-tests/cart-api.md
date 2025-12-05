@@ -1,20 +1,21 @@
 # Cart API Documentation
 
-Base URL: `http://localhost:3000/api/cart`
+Base URL: `http://localhost:8080/api/cart`
 
-**Note:** All cart endpoints require authentication (JWT token in cookie or Authorization header).
+**Note:** All cart endpoints require authentication (JWT token in httpOnly cookie).
 
 ## Cart Endpoints
 
 ### 1. Get Cart
+
 **Endpoint:** `GET /`  
 **Auth Required:** Yes (User)  
 **Description:** Get all items in the current user's cart with summary
 
 **cURL Example:**
 ```bash
-curl -X GET "http://localhost:3000/api/cart" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X GET "http://localhost:5000/api/cart" \
+  -b cookies.txt
 ```
 
 **Success Response (200):**
@@ -55,25 +56,29 @@ curl -X GET "http://localhost:3000/api/cart" \
 ```
 
 **Error Responses:**
+
 - `401` - Unauthorized (no token)
 
 ---
 
 ### 2. Add to Cart
+
 **Endpoint:** `POST /add`  
 **Auth Required:** Yes (User)  
 **Description:** Add a template to cart or increment quantity if already exists
 
 **Request Body:**
+
 ```json
 {
-  "tempelateId": "clxtemplate123",
+  "tempelateId": "cmin61e5t0001toccngvzmt2e",
   "tempelateDetailId": "clxdetail456",
   "quantity": 1
 }
 ```
 
 **Validation Rules:**
+
 - `tempelateId`: Valid CUID (required)
 - `tempelateDetailId`: Valid CUID (optional - use for templates with specific models/variants)
 - `quantity`: Integer 1-100 (required)
@@ -85,9 +90,9 @@ curl -X GET "http://localhost:3000/api/cart" \
 
 **cURL Example:**
 ```bash
-curl -X POST "http://localhost:3000/api/cart/add" \
+curl -X POST "http://localhost:8080/api/cart/checkout" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>" \
+  -b cookies.txt \
   -d '{"tempelateId":"clxtemplate123","quantity":1}'
 ```
 
@@ -155,9 +160,9 @@ curl -X POST "http://localhost:3000/api/cart/add" \
 
 **cURL Example:**
 ```bash
-curl -X PUT "http://localhost:3000/api/cart/update/clxcart123" \
+curl -X PUT "http://localhost:8080/api/cart/update/clxcart123" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>" \
+  -b cookies.txt \
   -d '{"quantity":5}'
 ```
 
@@ -187,6 +192,7 @@ curl -X PUT "http://localhost:3000/api/cart/update/clxcart123" \
 ```
 
 **Error Responses:**
+
 - `400` - Validation error or quantity missing
 - `401` - Unauthorized
 - `404` - Cart item not found
@@ -194,14 +200,15 @@ curl -X PUT "http://localhost:3000/api/cart/update/clxcart123" \
 ---
 
 ### 4. Remove Item from Cart
+
 **Endpoint:** `DELETE /remove/:cartItemId`  
 **Auth Required:** Yes (User)  
 **Description:** Remove a specific item from cart
 
 **cURL Example:**
 ```bash
-curl -X DELETE "http://localhost:3000/api/cart/remove/clxcart123" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X DELETE "http://localhost:8080/api/cart/remove/clxcart123" \
+  -b cookies.txt
 ```
 
 **Success Response (200):**
@@ -224,8 +231,8 @@ curl -X DELETE "http://localhost:3000/api/cart/remove/clxcart123" \
 
 **cURL Example:**
 ```bash
-curl -X DELETE "http://localhost:3000/api/cart/clear" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X DELETE "http://localhost:8080/api/cart/clear" \
+  -b cookies.txt
 ```
 
 **Success Response (200):**
@@ -248,8 +255,8 @@ curl -X DELETE "http://localhost:3000/api/cart/clear" \
 
 **cURL Example:**
 ```bash
-curl -X POST "http://localhost:3000/api/cart/checkout" \
-  -H "Cookie: auth_token=<YOUR_TOKEN>"
+curl -X POST "http://localhost:5000/api/cart/checkout" \
+  -b cookies.txt
 ```
 
 **Success Response (200):**

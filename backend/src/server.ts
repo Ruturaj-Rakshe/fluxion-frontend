@@ -13,15 +13,12 @@ class Server {
     }
 
     private config() {
-        const frontendUrl = process.env.FRONTEND_URL;
-        if (!frontendUrl) {
-            console.error(" FRONTEND_URL environment variable is not set");
-            process.exit(1);
-        }
-
-        // Enable CORS
+        const clientUrl = process.env.CLIENT_URL || "http://localhost:4040";
+        const adminUrl = process.env.ADMIN_URL || "http://localhost:3001";
+        
+        // Enable CORS for both client and admin apps
         this.app.use(cors({
-            origin: frontendUrl,
+            origin: [clientUrl, adminUrl],
             credentials: true,
         }));
         

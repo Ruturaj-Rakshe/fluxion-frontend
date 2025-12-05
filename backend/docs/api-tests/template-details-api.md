@@ -1,22 +1,25 @@
 # Template Details API Documentation
 
-Base URL: `http://localhost:3000/api/template-details`
+Base URL: `http://localhost:5000/api/template-details`
 
 **Note:** Template Details is a one-to-one extension of the Template model. Each template can have only ONE detail record.
 
 ## Public Endpoints
 
 ### 1. Get Template Details by Template ID
+
 **Endpoint:** `GET /get-by-template/:tempelateId`  
 **Auth Required:** No  
 **Description:** Get detailed information for a specific template
 
 **cURL Example:**
+
 ```bash
-curl -X GET "http://localhost:3000/api/template-details/get-by-template/clx123templateid"
+curl -X GET "http://localhost:8080/api/template-details/get-by-template/clx123templateid"
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "message": "Template details fetched successfully",
@@ -49,6 +52,7 @@ curl -X GET "http://localhost:3000/api/template-details/get-by-template/clx123te
 ```
 
 **Error Response (404):**
+
 ```json
 {
   "message": "Template details not found"
@@ -58,21 +62,25 @@ curl -X GET "http://localhost:3000/api/template-details/get-by-template/clx123te
 ---
 
 ### 2. List All Template Details
+
 **Endpoint:** `GET /list-all`  
 **Auth Required:** No  
 **Description:** List all template details with pagination
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (default: 20, max: 100)
 
 **cURL Example:**
+
 ```bash
-curl -X GET "http://localhost:3000/api/template-details/list-all?page=1&limit=10"
+curl -X GET "http://localhost:8080/api/template-details/list-all?page=1&limit=10"
 ```
 <!-- cmid8g90s0003vwcc0ok4pobo -->
 <!-- cmid8g90s0003vwcc0ok4pobo -->
 **Success Response (200):**
+
 ```json
 {
   "message": "Template details fetched successfully",
@@ -109,12 +117,13 @@ curl -X GET "http://localhost:3000/api/template-details/list-all?page=1&limit=10
 ## Admin-Only Endpoints
 
 ### 3. Add Template Details
+
 **Endpoint:** `POST /add/:tempelateId`  
 **Auth Required:** Yes (Admin)  
 **Description:** Add detailed information to a template (one-time operation, use update for changes)
 
-
 **Request Body:**
+
 ```json
 {
   "header": "Complete E-commerce Solution",
@@ -135,16 +144,18 @@ curl -X GET "http://localhost:3000/api/template-details/list-all?page=1&limit=10
 ```
 
 **Validation Rules:**
+
 - `header`: 1-300 characters (required)
 - `headerSubtitle`: 1-500 characters (required)
 - `features`: Array of 1-20 strings, each 1-200 characters (required)
 - `benefits`: Array of 1-20 strings, each 1-200 characters (required)
 
 **cURL Example:**
+
 ```bash
-curl -X POST "http://localhost:3000/api/template-details/add/clx123templateid" \
+curl -X POST "http://localhost:8080/api/template-details/add/clx123templateid" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_ADMIN_TOKEN>" \
+  -b admin-cookies.txt \
   -d '{
     "header": "Complete E-commerce Solution",
     "headerSubtitle": "Build your dream online store",
@@ -154,6 +165,7 @@ curl -X POST "http://localhost:3000/api/template-details/add/clx123templateid" \
 ```
 
 **Success Response (201):**
+
 ```json
 {
   "message": "Template detail added successfully",
@@ -171,6 +183,7 @@ curl -X POST "http://localhost:3000/api/template-details/add/clx123templateid" \
 ```
 
 **Error Responses:**
+
 - `400` - Template details already exist (use update instead)
 - `400` - Validation errors
 - `403` - Forbidden (not admin)
@@ -179,12 +192,16 @@ curl -X POST "http://localhost:3000/api/template-details/add/clx123templateid" \
 
 ---
 
+
+
 ### 4. Update Template Details
+
 **Endpoint:** `PUT /update/:id`  
 **Auth Required:** Yes (Admin)  
 **Description:** Update template details (partial update allowed)
 
 **Request Body (example - partial):**
+
 ```json
 {
   "header": "Updated E-commerce Solution",
@@ -193,10 +210,11 @@ curl -X POST "http://localhost:3000/api/template-details/add/clx123templateid" \
 ```
 
 **cURL Example:**
+
 ```bash
-curl -X PUT "http://localhost:3000/api/template-details/update/clxdetail123" \
+curl -X PUT "http://localhost:8080/api/template-details/update/clxdetail123" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_ADMIN_TOKEN>" \
+  -b admin-cookies.txt \
   -d '{
     "header": "Updated E-commerce Solution",
     "benefits": ["Saves time", "Easy to use", "Professional design"]
@@ -204,6 +222,7 @@ curl -X PUT "http://localhost:3000/api/template-details/update/clxdetail123" \
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "message": "Template detail updated successfully",
@@ -221,6 +240,7 @@ curl -X PUT "http://localhost:3000/api/template-details/update/clxdetail123" \
 ```
 
 **Error Responses:**
+
 - `400` - No valid fields to update
 - `400` - Validation errors
 - `403` - Forbidden (not admin)
@@ -230,17 +250,19 @@ curl -X PUT "http://localhost:3000/api/template-details/update/clxdetail123" \
 ---
 
 ### 5. Delete Template Details
+
 **Endpoint:** `DELETE /delete/:id`  
 **Auth Required:** Yes (Admin)  
 **Description:** Delete template details
 
 **cURL Example:**
 ```bash
-curl -X DELETE "http://localhost:3000/api/template-details/delete/clxdetail123" \
-  -H "Cookie: auth_token=<YOUR_ADMIN_TOKEN>"
+curl -X DELETE "http://localhost:8080/api/template-details/delete/clxdetail123" \
+  -b admin-cookies.txt
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "message": "Template detail deleted successfully"
@@ -248,6 +270,7 @@ curl -X DELETE "http://localhost:3000/api/template-details/delete/clxdetail123" 
 ```
 
 **Error Responses:**
+
 - `403` - Forbidden (not admin)
 - `404` - Template details not found
 - `500` - Server error

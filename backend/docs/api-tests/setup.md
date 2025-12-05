@@ -51,7 +51,7 @@ npx tsx prisma/seedAdmin.ts
 npm run dev
 ```
 
-The server will start on `http://localhost:3000` (or the port specified in your config).
+The server will start on `http://localhost:8080` (or the port specified in your .env file).
 
 ## Testing the API
 

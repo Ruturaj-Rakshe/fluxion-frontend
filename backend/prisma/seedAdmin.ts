@@ -15,14 +15,18 @@ async function seedAdmin() {
         console.log('Admin user already exists. Skipping seeding.');
         return;
     }
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);    
+    
+    // Hash password with 12 rounds (same as registration)
+    const hashedPassword = await bcrypt.hash(adminPassword, 12);    
+    
     // Create admin user
     const adminUser = await prisma.user.create({
         data: {
             email: adminEmail,
             name: 'Admin User',
             role: 'ADMIN',
-            password: hashedPassword
+            password: hashedPassword,
+            isEmailVerified: true  // Admin doesn't need email verification
         }
     });
     console.log('Admin user created:', adminUser.email);

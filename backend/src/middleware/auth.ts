@@ -37,7 +37,28 @@ class AuthMiddleware {
     static rateLimiter = rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutes
         max: 100, // limit each IP to 100 requests per windowMs
-        message: "Too many requests from this IP, please try again later."
+        message: "Too many requests from this IP, please try again later.",
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    // Stricter rate limiting for authentication endpoints
+    static authLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 10, // 10 login/signup attempts per 15 minutes
+        message: "Too many authentication attempts. Please try again later.",
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    // Very strict rate limiting for password reset to prevent abuse
+    static passwordResetLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 5, // Only 5 password reset requests per 15 minutes
+        message: "Too many password reset attempts. Please try again in 15 minutes.",
+        standardHeaders: true,
+        legacyHeaders: false,
+        skipSuccessfulRequests: false, // Count all requests, even successful ones
     });
 
 }

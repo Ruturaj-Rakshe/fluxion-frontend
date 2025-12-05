@@ -1,20 +1,23 @@
 # Template API Documentation
 
-Base URL: `http://localhost:3000/api/templates`
+Base URL: `http://localhost:5000/api/templates`
 
 ## Public Endpoints
 
 ### 1. List All Templates
+
 **Endpoint:** `GET /get-all-templates`  
 **Auth Required:** No  
 **Description:** Returns all templates
 
 **cURL Example (all templates):**
+
 ```bash
-curl -X GET "http://localhost:3000/api/templates/get-all-templates"
+curl -X GET "http://localhost:5000/api/templates/get-all-templates"
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "message": "All Templates retrieved successfully",
@@ -37,16 +40,19 @@ curl -X GET "http://localhost:3000/api/templates/get-all-templates"
 ---
 
 ### 2. Get Template By ID
+
 **Endpoint:** `GET /get-template/:id`  
 **Auth Required:** No  
 **Description:** Get a single template by its ID
 
 **cURL Example:**
+
 ```bash
-curl -X GET "http://localhost:3000/api/templates/get-template/clx123templateid"
+curl -X GET "http://localhost:8080/api/templates/get-template/clx123templateid"
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "message": "Template retrieved successfully",
@@ -65,6 +71,7 @@ curl -X GET "http://localhost:3000/api/templates/get-template/clx123templateid"
 ```
 
 **Error Response (404):**
+
 ```json
 {
   "message": "Template not found"
@@ -76,11 +83,13 @@ curl -X GET "http://localhost:3000/api/templates/get-template/clx123templateid"
 ## Admin-Only Endpoints
 
 ### 3. Create Template
+
 **Endpoint:** `POST /add-template`  
 **Auth Required:** Yes (Admin)  
 **Description:** Create a new template
 
 **Request Body:**
+
 ```json
 {
   "title": "E-commerce Template",
@@ -89,11 +98,22 @@ curl -X GET "http://localhost:3000/api/templates/get-template/clx123templateid"
   "imageUrl": "https://cdn.example.com/image.jpg",
   "thumbnailUrl": "https://cdn.example.com/thumb.jpg",
   "isActive": "ACTIVE"
+},
+  {
+  "title": "5 Star Mobile App and Design devlopment Services",
+  "description": "Both Native and flutter app devlopers. We Provide effective solutions to all customer needs",
+  "price": 15.0,
+  "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQyo23e0DCK4kLZHIOV60n3osK168k4SGVaVQ&s",
+  "thumbnailUrl": "https://chililabs.io",
+  "isActive": "ACTIVE"
 }
+
 ```
 
 **Validation Rules:**
+
 - `title`: 1-200 characters (required)
+
 - `description`: 1-10,000 characters (required)
 - `price`: $0.01 - $999,999.99 (required)
 - `imageUrl`: Valid URL, max 500 characters (required)
@@ -101,10 +121,12 @@ curl -X GET "http://localhost:3000/api/templates/get-template/clx123templateid"
 - `isActive`: "ACTIVE" or "INACTIVE" (default: "ACTIVE")
 
 **cURL Example:**
+
 ```bash
-curl -X POST "http://localhost:3000/api/templates/add-template" \
+
+curl -X POST "http://localhost:8080/api/templates/add-template" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_ADMIN_TOKEN>" \
+  -b admin-cookies.txt \
   -d '{
     "title": "E-commerce Template",
     "description": "Complete solution for online stores",
@@ -134,6 +156,7 @@ curl -X POST "http://localhost:3000/api/templates/add-template" \
 ```
 
 **Error Responses:**
+
 - `400` - Validation errors
 - `403` - Forbidden (not admin)
 - `500` - Server error
@@ -141,11 +164,13 @@ curl -X POST "http://localhost:3000/api/templates/add-template" \
 ---
 
 ### 4. Update Template
+
 **Endpoint:** `PUT /update-template/:id`  
 **Auth Required:** Yes (Admin)  
 **Description:** Update template fields (partial update allowed)
 
 **Request Body (example - partial):**
+
 ```json
 {
   "price": 79.0,
@@ -154,14 +179,16 @@ curl -X POST "http://localhost:3000/api/templates/add-template" \
 ```
 
 **cURL Example:**
+
 ```bash
-curl -X PUT "http://localhost:3000/api/templates/update-template/clx123templateid" \
+curl -X PUT "http://localhost:8080/api/templates/update-template/clx123templateid" \
   -H "Content-Type: application/json" \
-  -H "Cookie: auth_token=<YOUR_ADMIN_TOKEN>" \
+  -b admin-cookies.txt \
   -d '{"price":79.0,"isActive":"INACTIVE"}'
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "message": "Template updated successfully",
@@ -180,6 +207,7 @@ curl -X PUT "http://localhost:3000/api/templates/update-template/clx123templatei
 ```
 
 **Error Responses:**
+
 - `400` - Validation errors
 - `403` - Forbidden (not admin)
 - `404` - Template not found
@@ -188,17 +216,21 @@ curl -X PUT "http://localhost:3000/api/templates/update-template/clx123templatei
 ---
 
 ### 5. Delete Template
+
 **Endpoint:** `DELETE /delete-template/:id`  
 **Auth Required:** Yes (Admin)  
 **Description:** Delete a template (cascade deletes related details and cart items)
 
 **cURL Example:**
+
 ```bash
-curl -X DELETE "http://localhost:3000/api/templates/delete-template/clx123templateid" \
-  -H "Cookie: auth_token=<YOUR_ADMIN_TOKEN>"
+
+curl -X DELETE "http://localhost:8080/api/templates/delete-template/clx123templateid" \
+  -b admin-cookies.txt
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "message": "Template deleted successfully"
@@ -206,6 +238,7 @@ curl -X DELETE "http://localhost:3000/api/templates/delete-template/clx123templa
 ```
 
 **Error Responses:**
+
 - `403` - Forbidden (not admin)
 - `404` - Template not found (Prisma P2025)
 - `500` - Server error

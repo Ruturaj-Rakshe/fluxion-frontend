@@ -20,6 +20,24 @@ model User {
   role      Role     @default(USER)
   password  String
 
+  // Profile fields
+  avatarUrl     String?   @db.VarChar(500)
+  organization  String?   @db.VarChar(200)
+  contactNumber String?   @db.VarChar(50)
+  address       String?   @db.VarChar(500)
+
+  // Email verification fields
+  isEmailVerified      Boolean   @default(false)
+  emailVerificationOTP String?
+  otpExpiry            DateTime?
+
+  // Temporary field for pending password change
+  pendingPasswordHash  String?
+
+  // Password reset fields
+  resetToken       String?
+  resetTokenExpiry DateTime?
+
   carts     Cart[]
   orders    Order[]
 
