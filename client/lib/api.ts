@@ -287,4 +287,28 @@ export const orderAPI = {
     );
     return response.data;
   },
-};
+
+  async getOrderByPaymentId(paymentId: string): Promise<OrderResponse> {
+    const response = await axios.get(
+      `${API_BASE_URL}/api/orders/payment/${paymentId}`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  },
+
+  async createPaymentIntent(amount: number): Promise<ApiResponse> {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/payment/create-payment-intent`,
+      { amount },
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response.data;
+  }
+}

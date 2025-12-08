@@ -5,6 +5,7 @@ import tempelateDetailRoutes from "./templateDetailRoute.ts";
 import cartRoutes from "./cartRoute.ts";
 import orderRoutes from "./orderRoute.ts";
 import adminRoutes from "./adminRoute.ts";
+import paymentRoutes from "./paymentRoutes.ts";
 
 class AppRoutes {
     public router = express.Router();
@@ -21,6 +22,7 @@ class AppRoutes {
         this.router.use("/cart", cartRoutes);
         this.router.use("/orders", orderRoutes);
         this.router.use("/admin", adminRoutes);
+        this.router.use("/payment", paymentRoutes);
     }
 }
 

@@ -21,6 +21,9 @@ class OrderRoutes {
         // Get specific order
         this.router.get("/:orderId", AuthMiddleware.authenticateToken, OrderController.getOrderById);
         
+        // Get order by payment ID (for webhook polling)
+        this.router.get("/payment/:paymentId", AuthMiddleware.authenticateToken, OrderController.getOrderByPaymentId);
+        
         // Cancel order
         this.router.put("/:orderId/cancel", AuthMiddleware.authenticateToken, OrderController.cancelOrder);
         

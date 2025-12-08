@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -21,6 +21,12 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
 import { Minus, Plus } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import axios from "axios";
+
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 function CartPageContent() {
   const router = useRouter();
@@ -34,6 +40,9 @@ function CartPageContent() {
     totalPrice: 0,
     itemCount: 0
   });
+
+  const stripe = useStripe();
+  const elements = useElements();
 
   useEffect(() => {
     fetchCart();
@@ -136,26 +145,77 @@ function CartPageContent() {
       return;
     }
     
-    // For now, simulate payment (in production, integrate with payment gateway)
     const confirmed = confirm(`Proceed with checkout for $${total.toFixed(2)}?`);
     if (!confirmed) return;
 
     try {
       setLoading(true);
-      
-      // In production, you would get these from a real payment gateway
-      const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const paymentRef = `ref_${Date.now()}`;
-      
-      const { orderAPI } = await import("@/lib/api");
-      const response = await orderAPI.createOrder({
-        paymentId,
-        paymentRef
+
+      // Create payment intent with Stripe
+      const createPayment = await axios.post("http://localhost:5000/api/payment/create-payment-intent", {
+        amount: Math.round(total * 100), // amount in cents
+        currency: 'usd'
       });
 
-      if (response.order) {
-        alert(`Order created successfully! Order ID: ${response.order.id}`);
-        router.push("/orders");
+      const paymentResponse = createPayment.data 
+      const { clientSecret } = paymentResponse;  
+
+      if (!stripe || !elements) {
+        alert("Stripe has not loaded yet. Please try again.");
+        return;
+      }
+
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        alert("Card information is required. Please enter your card details.");
+        return;
+      }
+
+
+      const result = await stripe.confirmCardPayment(clientSecret,{
+        payment_method: {
+          card: cardElement,
+        }
+      });
+
+      if (result.error) {
+        console.error("Payment confirmation error:", result.error);
+        alert(result.error.message || "Payment failed. Please try again.");
+      } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+        // Payment succeeded - webhook will create the order
+        alert("Payment successful! Processing your order...");
+        
+        // Poll for order creation (webhook creates it)
+        const paymentIntentId = result.paymentIntent.id;
+        const maxAttempts = 10;
+        let attempts = 0;
+        
+        const checkOrder = setInterval(async () => {
+          attempts++;
+          try {
+            const { orderAPI } = await import("@/lib/api");
+            const orderCheck = await orderAPI.getOrderByPaymentId(paymentIntentId);
+            
+            if (orderCheck.order) {
+              clearInterval(checkOrder);
+              alert(`Order created successfully! Order ID: ${orderCheck.order.id}`);
+              await refreshCart();
+              router.push("/orders");
+            } else if (attempts >= maxAttempts) {
+              clearInterval(checkOrder);
+              alert("Order is being processed. Check your orders page in a moment.");
+              await refreshCart();
+              router.push("/orders");
+            }
+          } catch (err) {
+            if (attempts >= maxAttempts) {
+              clearInterval(checkOrder);
+              alert("Order is being processed. Check your orders page.");
+              await refreshCart();
+              router.push("/orders");
+            }
+          }
+        }, 2000); // Check every 2 seconds
       }
     } catch (err: any) {
       console.error("Error creating order:", err);
@@ -292,11 +352,33 @@ function CartPageContent() {
                   </div>
                 </div>
 
+                {/* Stripe Card Element */}
+                <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
+                  <label className="block text-sm font-medium mb-2">Card Details</label>
+                  <CardElement
+                    options={{
+                      style: {
+                        base: {
+                          fontSize: '16px',
+                          color: '#ffffff',
+                          '::placeholder': {
+                            color: '#9ca3af',
+                          },
+                        },
+                        invalid: {
+                          color: '#ef4444',
+                        },
+                      },
+                    }}
+                  />
+                </div>
+
                 <Button
                   onClick={handleCheckout}
-                  className="w-full bg-white text-black hover:bg-gray-200 hover:text-black font-semibold cursor-pointer"
+                  disabled={loading || !stripe || !elements}
+                  className="w-full bg-white text-black hover:bg-gray-200 hover:text-black font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Proceed to Checkout
+                  {loading ? "Processing..." : "Proceed to Checkout"}
                 </Button>
 
                 <AlertDialog>
@@ -340,7 +422,12 @@ function CartPageContent() {
 export default function CartPage() {
   return (
     <ProtectedRoute>
-      <CartPageContent />
+      <Elements stripe={stripePromise}>
+        <CartPageContent />
+      </Elements>
     </ProtectedRoute>
   );
 }
+
+
+// payment -> secretkey -> cvlientSecretKey -> 

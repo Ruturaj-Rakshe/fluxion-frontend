@@ -342,6 +342,60 @@ class OrderController {
       res.status(500).json({ message: "An error occurred" });
     }
   }
+
+  // Get order by payment ID (for webhook verification)
+  async getOrderByPaymentId(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const { paymentId } = req.params;
+
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+
+      if (!paymentId) {
+        res.status(400).json({ message: "Payment ID is required" });
+        return;
+      }
+
+      const order = await prisma.order.findFirst({
+        where: {
+          paymentId,
+          userId
+        },
+        include: {
+          orderItems: {
+            include: {
+              tempelate: {
+                select: {
+                  id: true,
+                  title: true,
+                  thumbnailUrl: true,
+                  price: true
+                }
+              },
+              tempelateDetail: true
+            }
+          }
+        }
+      });
+
+      if (!order) {
+        res.status(404).json({ message: "Order not found", order: null });
+        return;
+      }
+
+      res.status(200).json({
+        message: "Order found",
+        order
+      });
+
+    } catch (error: any) {
+      console.error("Error fetching order by payment ID:", error);
+      res.status(500).json({ message: "An error occurred" });
+    }
+  }
 }
 
 export default new OrderController();
