@@ -26,7 +26,10 @@ import axios from "axios";
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+console.log('Stripe Publishable Key:', stripeKey ? 'Loaded ✓' : 'Missing ✗');
+
+const stripePromise = loadStripe(stripeKey || '');
 
 function CartPageContent() {
   const router = useRouter();
@@ -40,6 +43,7 @@ function CartPageContent() {
     totalPrice: 0,
     itemCount: 0
   });
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'netbanking'>('card');
 
   const stripe = useStripe();
   const elements = useElements();
@@ -145,77 +149,136 @@ function CartPageContent() {
       return;
     }
     
-    const confirmed = confirm(`Proceed with checkout for $${total.toFixed(2)}?`);
+    const confirmed = confirm(`Proceed with ${paymentMethod.toUpperCase()} payment for $${total.toFixed(2)}?`);
     if (!confirmed) return;
 
     try {
       setLoading(true);
 
-      // Create payment intent with Stripe
-      const createPayment = await axios.post("http://localhost:5000/api/payment/create-payment-intent", {
-        amount: Math.round(total * 100), // amount in cents
-        currency: 'usd'
-      });
+      if (paymentMethod === 'card') {
+        // Card Payment Flow
+        const API_BASE_URL = "http://localhost:5000";
+        const createPayment = await axios.post(`${API_BASE_URL}/api/payment/create-payment-intent`, {
 
-      const paymentResponse = createPayment.data 
-      const { clientSecret } = paymentResponse;  
+          amount: Math.round(total * 100),
+          currency: 'usd',
+          paymentMethod: 'card'
+        }, {
+          withCredentials: true
+        });
 
-      if (!stripe || !elements) {
-        alert("Stripe has not loaded yet. Please try again.");
-        return;
-      }
+        const paymentResponse = createPayment.data;
+        const { clientSecret } = paymentResponse;
 
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) {
-        alert("Card information is required. Please enter your card details.");
-        return;
-      }
+        console.log("publishable Key", process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
+        console.log("Client Secret received:", clientSecret);
 
-      const result = await stripe.confirmCardPayment(clientSecret,{
-        payment_method: {
-          card: cardElement,
+        // Wait for Stripe to load
+        if (!stripe) {
+          console.error("Stripe.js has not loaded yet.");
+          alert("Payment system is still loading. Please wait a moment and try again.");
+          setLoading(false);
+          return;
         }
-      });
 
-      if (result.error) {
-        console.error("Payment confirmation error:", result.error);
-        alert(result.error.message || "Payment failed. Please try again.");
-      } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-        // Payment succeeded - webhook will create the order
-        alert("Payment successful! Processing your order...");
+        if (!elements) {
+          console.error("Stripe Elements has not loaded yet.");
+          alert("Payment form is still loading. Please wait a moment and try again.");
+          setLoading(false);
+          return;
+        }
+
+        // Wait for CardElement to be mounted (sometimes takes a moment)
+        let cardElement = elements.getElement(CardElement);
+        let retries = 0;
+        const maxRetries = 5;
         
-        // Poll for order creation (webhook creates it)
-        const paymentIntentId = result.paymentIntent.id;
-        const maxAttempts = 10;
-        let attempts = 0;
-        
-        const checkOrder = setInterval(async () => {
-          attempts++;
-          try {
-            const { orderAPI } = await import("@/lib/api");
-            const orderCheck = await orderAPI.getOrderByPaymentId(paymentIntentId);
-            
-            if (orderCheck.order) {
-              clearInterval(checkOrder);
-              alert(`Order created successfully! Order ID: ${orderCheck.order.id}`);
-              await refreshCart();
-              router.push("/orders");
-            } else if (attempts >= maxAttempts) {
-              clearInterval(checkOrder);
-              alert("Order is being processed. Check your orders page in a moment.");
-              await refreshCart();
-              router.push("/orders");
-            }
-          } catch (err) {
-            if (attempts >= maxAttempts) {
-              clearInterval(checkOrder);
-              alert("Order is being processed. Check your orders page.");
-              await refreshCart();
-              router.push("/orders");
-            }
+        while (!cardElement && retries < maxRetries) {
+          console.log(`Waiting for CardElement to mount... (attempt ${retries + 1})`);
+          await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
+          cardElement = elements.getElement(CardElement);
+          retries++;
+        }
+
+        console.log("Card Element retrieved:", cardElement);
+
+        if (!cardElement) {
+          alert("Card input field is not ready. Please scroll to the card details section and ensure it's loaded, then try again.");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Confirming card payment with client secret:", clientSecret);
+
+
+        const result = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: cardElement,
           }
-        }, 2000); // Check every 2 seconds
+        });
+
+        console.log("Payment confirmation result:", result);
+
+        if (result.error) {
+          console.error("Payment confirmation error:", result.error);
+          alert(result.error.message || "Payment failed. Please try again.");
+        } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+          alert("Payment successful! Processing your order...");
+          
+          // Poll for order creation
+          const paymentIntentId = result.paymentIntent.id;
+          const maxAttempts = 10;
+          let attempts = 0;
+          
+          const checkOrder = setInterval(async () => {
+            attempts++;
+            try {
+              const { orderAPI } = await import("@/lib/api");
+              const orderCheck = await orderAPI.getOrderByPaymentId(paymentIntentId);
+              
+              if (orderCheck.order) {
+                clearInterval(checkOrder);
+                alert(`Order created successfully! Order ID: ${orderCheck.order.id}`);
+                await refreshCart();
+                router.push("/orders");
+              } else if (attempts >= maxAttempts) {
+                clearInterval(checkOrder);
+                alert("Order is being processed. Check your orders page in a moment.");
+                await refreshCart();
+                router.push("/orders");
+              }
+            } catch {
+              if (attempts >= maxAttempts) {
+                clearInterval(checkOrder);
+                alert("Order is being processed. Check your orders page.");
+                await refreshCart();
+                router.push("/orders");
+              }
+            }
+          }, 2000);
+        }
+      } else if (paymentMethod === 'upi') {
+        // UPI Payment Flow with Stripe
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+        const createPayment = await axios.post(`${API_BASE_URL}/api/payment/create-payment-intent`, {
+          amount: Math.round(total * 100),
+          currency: 'usd',
+          paymentMethod: 'upi'
+        }, {
+          withCredentials: true
+        });
+
+        const { clientSecret } = createPayment.data;
+
+        // For UPI, you need to use Payment Element instead of Card Element
+        // Or redirect to Stripe's hosted payment page
+        alert("UPI payment requires Stripe Payment Element. Please use Card payment for now, or integrate Razorpay for full UPI support.");
+        setLoading(false);
+      } else if (paymentMethod === 'netbanking') {
+        // Net Banking Flow
+        alert("Net Banking integration coming soon! Consider using Razorpay or Stripe for net banking.");
+        setLoading(false);
       }
     } catch (err: any) {
       console.error("Error creating order:", err);
@@ -352,33 +415,103 @@ function CartPageContent() {
                   </div>
                 </div>
 
-                {/* Stripe Card Element */}
-                <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
-                  <label className="block text-sm font-medium mb-2">Card Details</label>
-                  <CardElement
-                    options={{
-                      style: {
-                        base: {
-                          fontSize: '16px',
-                          color: '#ffffff',
-                          '::placeholder': {
-                            color: '#9ca3af',
-                          },
-                        },
-                        invalid: {
-                          color: '#ef4444',
-                        },
-                      },
-                    }}
-                  />
+                {/* Payment Method Selection */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium">Payment Method</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => setPaymentMethod('card')}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        paymentMethod === 'card'
+                          ? 'border-white bg-zinc-800'
+                          : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                      }`}
+                    >
+                      <div className="text-xs font-medium">💳 Card</div>
+                    </button>
+                    <button
+                      onClick={() => setPaymentMethod('upi')}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        paymentMethod === 'upi'
+                          ? 'border-white bg-zinc-800'
+                          : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                      }`}
+                    >
+                      <div className="text-xs font-medium">📱 UPI</div>
+                    </button>
+                    <button
+                      onClick={() => setPaymentMethod('netbanking')}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        paymentMethod === 'netbanking'
+                          ? 'border-white bg-zinc-800'
+                          : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                      }`}
+                    >
+                      <div className="text-xs font-medium">🏦 Net Banking</div>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Payment Details based on method */}
+                {paymentMethod === 'card' && (
+                  <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
+                    <label className="block text-sm font-medium mb-2">Card Details</label>
+                    {stripe && elements ? (
+                      <CardElement
+                        options={{
+                          style: {
+                            base: {
+                              fontSize: '16px',
+                              color: '#ffffff',
+                              '::placeholder': {
+                                color: '#9ca3af',
+                              },
+                            },
+                            invalid: {
+                              color: '#ef4444',
+                            },
+                          },
+                        }}
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-400">Loading payment form...</div>
+                    )}
+                  </div>
+                )}
+
+                {paymentMethod === 'upi' && (
+                  <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
+                    <label className="block text-sm font-medium mb-2">UPI ID</label>
+                    <input
+                      type="text"
+                      placeholder="yourname@upi"
+                      className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-white"
+                    />
+                    <p className="text-xs text-gray-400 mt-2">Enter your UPI ID (e.g., phone@paytm, phone@gpay)</p>
+                  </div>
+                )}
+
+                {paymentMethod === 'netbanking' && (
+                  <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
+                    <label className="block text-sm font-medium mb-2">Select Bank</label>
+                    <select className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-white">
+                      <option value="">Choose your bank</option>
+                      <option value="hdfc">HDFC Bank</option>
+                      <option value="icici">ICICI Bank</option>
+                      <option value="sbi">State Bank of India</option>
+                      <option value="axis">Axis Bank</option>
+                      <option value="kotak">Kotak Mahindra Bank</option>
+                      <option value="pnb">Punjab National Bank</option>
+                    </select>
+                  </div>
+                )}
 
                 <Button
                   onClick={handleCheckout}
-                  disabled={loading || !stripe || !elements}
+                  disabled={loading || (paymentMethod === 'card' && !stripe)}
                   className="w-full bg-white text-black hover:bg-gray-200 hover:text-black font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Processing..." : "Proceed to Checkout"}
+                  {loading ? "Processing..." : paymentMethod === 'card' && !stripe ? "Loading Payment..." : "Proceed to Checkout"}
                 </Button>
 
                 <AlertDialog>
