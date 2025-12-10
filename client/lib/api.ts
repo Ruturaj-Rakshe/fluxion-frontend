@@ -296,12 +296,14 @@ export const orderAPI = {
       }
     );
     return response.data;
-  },
+  }
+};
 
-  async createPaymentIntent(amount: number): Promise<ApiResponse> {
+export const paymentAPI = {
+  async createPaymentIntent(amount: number, paymentMethod: string): Promise<{ clientSecret: string }> {
     const response = await axios.post(
       `${API_BASE_URL}/api/payment/create-payment-intent`,
-      { amount },
+      { amount, paymentMethod },
       {
         withCredentials: true,
         headers: {

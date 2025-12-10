@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -15,23 +15,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Navbar } from "@/components/Navbarr";
-import { cartAPI } from "@/lib/api";
+import { cartAPI, paymentAPI, orderAPI } from "@/lib/api";
 import { CartItem } from "@/lib/index";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
 import { Minus, Plus } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import axios from "axios";
-
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-console.log('Stripe Publishable Key:', stripeKey ? 'Loaded ✓' : 'Missing ✗');
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
-const stripePromise = loadStripe(stripeKey || '');
-
-function CartPageContent() {
+function PaymentForm() {
   const router = useRouter();
   const { refreshCart } = useCart();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -44,37 +39,47 @@ function CartPageContent() {
     itemCount: 0
   });
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'netbanking'>('card');
-
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [upiId, setUpiId] = useState('');
+  const [selectedBank, setSelectedBank] = useState('');
+  const [cardError, setCardError] = useState<string | null>(null);
   const stripe = useStripe();
   const elements = useElements();
-
-  useEffect(() => {
-    fetchCart();
-  }, []);
-
+  
   const fetchCart = async () => {
     try {
       setLoading(true);
       const response = await cartAPI.getCart();
       if (response.cart) {
         setCartItems(response.cart);
+        setSummary({
+          totalItems: response.cart.length,
+          totalPrice: response.cart.reduce((sum: number, item: CartItem) => sum + item.tempelate.price * item.quantity, 0),
+          itemCount: response.cart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0),
+        });
       }
-      if (response.summary) {
-        setSummary(response.summary);
-      }
-      await refreshCart(); // Update navbar cart count
-    } catch (err: any) {
+      await refreshCart(); // Update navbar
+      setError(null);
+    } catch (err: unknown) {
       console.error("Error fetching cart:", err);
-      if (err.response?.status === 401) {
+      const error = err as { response?: { data?: { message?: string }; status?: number }; message?: string };
+      if ((error?.response?.status === 401)) {
         setError("Please login to view your cart");
         router.push("/signin");
       } else {
-        setError("Failed to load cart. Please try again.");
+        setError(error?.response?.data?.message || "Failed to load cart");
       }
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
 
   const updateQuantity = async (cartItemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -105,9 +110,10 @@ function CartPageContent() {
       await cartAPI.updateCartItem(cartItemId, newQuantity);
       // update navbar badge
       await refreshCart();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error updating quantity:", err);
-      alert(err.response?.data?.message || "Failed to update quantity");
+      const error = err as { response?: { data?: { message?: string } } };
+      alert(error?.response?.data?.message || "Failed to update quantity");
       // revert to previous state
       setCartItems(previousItems);
       setSummary(previousSummary);
@@ -148,152 +154,125 @@ function CartPageContent() {
       alert("Your cart is empty");
       return;
     }
-    
-    const confirmed = confirm(`Proceed with ${paymentMethod.toUpperCase()} payment for $${total.toFixed(2)}?`);
-    if (!confirmed) return;
+
+    if (!stripe || !elements) {
+      alert("Stripe has not loaded yet. Please try again.");
+      return;
+    }
+
+    setProcessingPayment(true);
+    setCardError(null);
 
     try {
-      setLoading(true);
+      // Create payment intent - Stripe requires amount in cents
+      const amountInCents = Math.round(total * 100);
+      const response = await paymentAPI.createPaymentIntent(
+        amountInCents,
+        paymentMethod === 'upi' ? 'upi' : 'card'
+      );
 
+      console.log("Payment Intent Response:", response);
+
+      if (!response.clientSecret) {
+        throw new Error("Failed to create payment intent");
+      }
+
+      console.log("Client Secret received:", response.clientSecret);
+      console.log("Proceeding with payment method:", paymentMethod);
+
+      // Confirm payment based on method
       if (paymentMethod === 'card') {
-        // Card Payment Flow
-        const API_BASE_URL = "http://localhost:5000";
-        const createPayment = await axios.post(`${API_BASE_URL}/api/payment/create-payment-intent`, {
-
-          amount: Math.round(total * 100),
-          currency: 'usd',
-          paymentMethod: 'card'
-        }, {
-          withCredentials: true
-        });
-
-        const paymentResponse = createPayment.data;
-        const { clientSecret } = paymentResponse;
-
-        console.log("publishable Key", process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-
-        console.log("Client Secret received:", clientSecret);
-
-        // Wait for Stripe to load
-        if (!stripe) {
-          console.error("Stripe.js has not loaded yet.");
-          alert("Payment system is still loading. Please wait a moment and try again.");
-          setLoading(false);
-          return;
-        }
-
-        if (!elements) {
-          console.error("Stripe Elements has not loaded yet.");
-          alert("Payment form is still loading. Please wait a moment and try again.");
-          setLoading(false);
-          return;
-        }
-
-        // Wait for CardElement to be mounted (sometimes takes a moment)
-        let cardElement = elements.getElement(CardElement);
-        let retries = 0;
-        const maxRetries = 5;
-        
-        while (!cardElement && retries < maxRetries) {
-          console.log(`Waiting for CardElement to mount... (attempt ${retries + 1})`);
-          await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
-          cardElement = elements.getElement(CardElement);
-          retries++;
-        }
-
-        console.log("Card Element retrieved:", cardElement);
-
+        const cardElement = elements.getElement(CardElement);
         if (!cardElement) {
-          alert("Card input field is not ready. Please scroll to the card details section and ensure it's loaded, then try again.");
-          setLoading(false);
-          return;
+          throw new Error("Card element not found");
         }
 
-        console.log("Confirming card payment with client secret:", clientSecret);
-
-
-        const result = await stripe.confirmCardPayment(clientSecret, {
-          payment_method: {
-            card: cardElement,
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+          response.clientSecret,
+          {
+            payment_method: {
+              card: cardElement,
+            },
           }
-        });
+        );
 
-        console.log("Payment confirmation result:", result);
+        if (confirmError) {
+          setCardError(confirmError.message || "Payment failed");
+          throw new Error(confirmError.message);
+        }
 
-        if (result.error) {
-          console.error("Payment confirmation error:", result.error);
-          alert(result.error.message || "Payment failed. Please try again.");
-        } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-          alert("Payment successful! Processing your order...");
-          
+        if (paymentIntent?.status === 'succeeded') {
           // Poll for order creation
-          const paymentIntentId = result.paymentIntent.id;
-          const maxAttempts = 10;
-          let attempts = 0;
-          
-          const checkOrder = setInterval(async () => {
-            attempts++;
-            try {
-              const { orderAPI } = await import("@/lib/api");
-              const orderCheck = await orderAPI.getOrderByPaymentId(paymentIntentId);
-              
-              if (orderCheck.order) {
-                clearInterval(checkOrder);
-                alert(`Order created successfully! Order ID: ${orderCheck.order.id}`);
-                await refreshCart();
-                router.push("/orders");
-              } else if (attempts >= maxAttempts) {
-                clearInterval(checkOrder);
-                alert("Order is being processed. Check your orders page in a moment.");
-                await refreshCart();
-                router.push("/orders");
-              }
-            } catch {
-              if (attempts >= maxAttempts) {
-                clearInterval(checkOrder);
-                alert("Order is being processed. Check your orders page.");
-                await refreshCart();
-                router.push("/orders");
-              }
-            }
-          }, 2000);
+          await pollForOrder(paymentIntent.id);
         }
       } else if (paymentMethod === 'upi') {
-        // UPI Payment Flow with Stripe
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-        const createPayment = await axios.post(`${API_BASE_URL}/api/payment/create-payment-intent`, {
-          amount: Math.round(total * 100),
-          currency: 'usd',
-          paymentMethod: 'upi'
-        }, {
-          withCredentials: true
-        });
-
-        const { clientSecret } = createPayment.data;
-
-        // For UPI, you need to use Payment Element instead of Card Element
-        // Or redirect to Stripe's hosted payment page
-        alert("UPI payment requires Stripe Payment Element. Please use Card payment for now, or integrate Razorpay for full UPI support.");
-        setLoading(false);
+        // UPI with Stripe requires Payment Element or redirect flow
+        alert("UPI payments require Stripe Payment Element integration.\n\nFor now, please use Card payment or integrate Razorpay for native UPI support (GPay, PhonePe, Amazon Pay).");
+        setProcessingPayment(false);
+        return;
+        // TODO: Implement Stripe Payment Element or Razorpay UPI integration
       } else if (paymentMethod === 'netbanking') {
-        // Net Banking Flow
-        alert("Net Banking integration coming soon! Consider using Razorpay or Stripe for net banking.");
-        setLoading(false);
+        alert("Net Banking - Please implement with Razorpay or similar gateway");
       }
-    } catch (err: any) {
-      console.error("Error creating order:", err);
-      if (err.response?.status === 401) {
-        alert("Please login to checkout");
-        router.push("/signin");
-      } else if (err.response?.status === 400) {
-        alert(err.response.data.message || "Checkout failed. Please try again.");
-        await fetchCart(); // Refresh cart in case items are no longer available
+    } catch (err: unknown) {
+      console.error("Payment error:", err);
+      const error = err as { response?: { data?: { message?: string; error?: string }; status?: number }; message?: string };
+      
+      // Check if email verification is required
+      if (error?.response?.status === 403 && error?.response?.data?.error?.includes('verify your email')) {
+        const goToProfile = confirm(
+          "⚠️ Email Verification Required\n\n" +
+          "You haven't verified your email yet. You need to verify your email before making a purchase.\n\n" +
+          "Click OK to go to your profile and verify your email, or Cancel to stay here."
+        );
+        
+        if (goToProfile) {
+          router.push('/settingsPage');
+        }
       } else {
-        alert("Failed to create order. Please try again.");
+        alert(error?.response?.data?.message || error?.message || "Payment failed. Please try again.");
       }
     } finally {
-      setLoading(false);
+      setProcessingPayment(false);
     }
+  };
+
+  const pollForOrder = async (paymentIntentId: string, maxAttempts = 10) => {
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        const response = await orderAPI.getOrderByPaymentId(paymentIntentId);
+        if (response?.order) {
+          alert(`Order created successfully! Order ID: ${response.order.id}`);
+          await refreshCart();
+          router.push('/orders');
+          return;
+        }
+      } catch {
+        console.log(`Polling attempt ${i + 1}/${maxAttempts}`);
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    // Webhook hasn't created order - create it manually for local dev
+    try {
+      console.log("Creating order manually (webhook not received)");
+      const orderResponse = await orderAPI.createOrder({
+        paymentId: paymentIntentId,
+        paymentRef: `ref_${Date.now()}`
+      });
+      
+      if (orderResponse?.order) {
+        alert(`Order created successfully! Order ID: ${orderResponse.order.id}`);
+        await refreshCart();
+        router.push('/orders');
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to create order:", error);
+    }
+    
+    alert("Payment successful! Order is being processed. Check your orders page.");
+    router.push('/orders');
   };
 
   const subtotal = summary.totalPrice;
@@ -360,7 +339,7 @@ function CartPageContent() {
                           >
                             <Minus size={16} />
                           </button>
-                          <span className="px-3 py-1 bg-zinc-800 rounded min-w-[40px] text-center">
+                          <span className="px-3 py-1 bg-zinc-800 rounded min-w-10 text-center">
                             {item.quantity}
                           </span>
                           <button
@@ -416,102 +395,115 @@ function CartPageContent() {
                 </div>
 
                 {/* Payment Method Selection */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium">Payment Method</label>
-                  <div className="grid grid-cols-3 gap-2">
+                <div className="border-t border-zinc-700 pt-4 space-y-3">
+                  <h3 className="font-semibold text-sm">Payment Method</h3>
+                  <div className="flex gap-2">
                     <button
                       onClick={() => setPaymentMethod('card')}
-                      className={`p-3 rounded-lg border-2 transition-all ${
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                         paymentMethod === 'card'
-                          ? 'border-white bg-zinc-800'
-                          : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                          ? 'bg-white text-black'
+                          : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
                       }`}
                     >
-                      <div className="text-xs font-medium">💳 Card</div>
+                      Card
                     </button>
                     <button
                       onClick={() => setPaymentMethod('upi')}
-                      className={`p-3 rounded-lg border-2 transition-all ${
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                         paymentMethod === 'upi'
-                          ? 'border-white bg-zinc-800'
-                          : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                          ? 'bg-white text-black'
+                          : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
                       }`}
                     >
-                      <div className="text-xs font-medium">📱 UPI</div>
+                      UPI
                     </button>
                     <button
                       onClick={() => setPaymentMethod('netbanking')}
-                      className={`p-3 rounded-lg border-2 transition-all ${
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                         paymentMethod === 'netbanking'
-                          ? 'border-white bg-zinc-800'
-                          : 'border-zinc-700 bg-zinc-900 hover:border-zinc-600'
+                          ? 'bg-white text-black'
+                          : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
                       }`}
                     >
-                      <div className="text-xs font-medium">🏦 Net Banking</div>
+                      Net Banking
                     </button>
                   </div>
-                </div>
 
-                {/* Payment Details based on method */}
-                {paymentMethod === 'card' && (
-                  <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
-                    <label className="block text-sm font-medium mb-2">Card Details</label>
-                    {stripe && elements ? (
-                      <CardElement
-                        options={{
-                          style: {
-                            base: {
-                              fontSize: '16px',
-                              color: '#ffffff',
-                              '::placeholder': {
-                                color: '#9ca3af',
+                  {/* Card Payment Input */}
+                  {paymentMethod === 'card' && (
+                    <div className="space-y-2">
+                      <label className="text-sm text-gray-400">Card Details</label>
+                      <div className="p-3 bg-zinc-800 rounded-lg border border-zinc-700">
+                        <CardElement
+                          options={{
+                            style: {
+                              base: {
+                                fontSize: '16px',
+                                color: '#ffffff',
+                                '::placeholder': {
+                                  color: '#9ca3af',
+                                },
+                              },
+                              invalid: {
+                                color: '#ef4444',
                               },
                             },
-                            invalid: {
-                              color: '#ef4444',
-                            },
-                          },
-                        }}
+                          }}
+                        />
+                      </div>
+                      {cardError && (
+                        <p className="text-red-500 text-sm">{cardError}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* UPI Payment Input */}
+                  {paymentMethod === 'upi' && (
+                    <div className="space-y-2">
+                      <label className="text-sm text-gray-400">UPI ID</label>
+                      <input
+                        type="text"
+                        placeholder="yourname@upi"
+                        value={upiId}
+                        onChange={(e) => setUpiId(e.target.value)}
+                        className="w-full p-3 bg-zinc-800 rounded-lg border border-zinc-700 text-white placeholder-gray-400 focus:outline-none focus:border-white"
                       />
-                    ) : (
-                      <div className="text-sm text-gray-400">Loading payment form...</div>
-                    )}
-                  </div>
-                )}
+                      <p className="text-xs text-gray-500">
+                        Note: UPI payments redirect to payment gateway
+                      </p>
+                    </div>
+                  )}
 
-                {paymentMethod === 'upi' && (
-                  <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
-                    <label className="block text-sm font-medium mb-2">UPI ID</label>
-                    <input
-                      type="text"
-                      placeholder="yourname@upi"
-                      className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-white"
-                    />
-                    <p className="text-xs text-gray-400 mt-2">Enter your UPI ID (e.g., phone@paytm, phone@gpay)</p>
-                  </div>
-                )}
-
-                {paymentMethod === 'netbanking' && (
-                  <div className="bg-zinc-800 p-4 rounded-lg border border-zinc-700">
-                    <label className="block text-sm font-medium mb-2">Select Bank</label>
-                    <select className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-white">
-                      <option value="">Choose your bank</option>
-                      <option value="hdfc">HDFC Bank</option>
-                      <option value="icici">ICICI Bank</option>
-                      <option value="sbi">State Bank of India</option>
-                      <option value="axis">Axis Bank</option>
-                      <option value="kotak">Kotak Mahindra Bank</option>
-                      <option value="pnb">Punjab National Bank</option>
-                    </select>
-                  </div>
-                )}
+                  {/* Net Banking Input */}
+                  {paymentMethod === 'netbanking' && (
+                    <div className="space-y-2">
+                      <label className="text-sm text-gray-400">Select Bank</label>
+                      <select
+                        value={selectedBank}
+                        onChange={(e) => setSelectedBank(e.target.value)}
+                        className="w-full p-3 bg-zinc-800 rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-white"
+                      >
+                        <option value="">Select your bank</option>
+                        <option value="sbi">State Bank of India</option>
+                        <option value="hdfc">HDFC Bank</option>
+                        <option value="icici">ICICI Bank</option>
+                        <option value="axis">Axis Bank</option>
+                        <option value="kotak">Kotak Mahindra Bank</option>
+                      </select>
+                      <p className="text-xs text-gray-500">
+                        Net Banking requires integration with payment gateway
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 <Button
                   onClick={handleCheckout}
-                  disabled={loading || (paymentMethod === 'card' && !stripe)}
+                  disabled={loading || processingPayment || !stripe}
                   className="w-full bg-white text-black hover:bg-gray-200 hover:text-black font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Processing..." : paymentMethod === 'card' && !stripe ? "Loading Payment..." : "Proceed to Checkout"}
+                  {processingPayment ? "Processing Payment..." : `Pay $${total.toFixed(2)}`}
                 </Button>
 
                 <AlertDialog>
@@ -552,12 +544,18 @@ function CartPageContent() {
   );
 }
 
+function CartPageContent() {
+  return (
+    <Elements stripe={stripePromise}>
+      <PaymentForm />
+    </Elements>
+  );
+}
+
 export default function CartPage() {
   return (
     <ProtectedRoute>
-      <Elements stripe={stripePromise}>
-        <CartPageContent />
-      </Elements>
+      <CartPageContent />
     </ProtectedRoute>
   );
 }
