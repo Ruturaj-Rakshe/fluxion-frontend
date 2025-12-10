@@ -12,7 +12,7 @@ import { getData } from "./payments/page";
 import ActiveUsersCard from "./ActiveUsers";
 import { TotalUsersCard } from "./TotalUsers";
 import { AdminNotesCard } from "./AdminNotes";
-import { AdminStats } from "@/lib";
+import { AdminStats, RecentOrder } from "@/lib";
 import { adminAPI } from "@/lib/api";
 
 export const BentoGridItem = ({id, onClick, className = "", children, heading, textColor = "text-white/35", SimpleChart, AreaChart, AdminActions, PieChart, DataTable, ActiveUsers, TotalUsers, AdminNotes}: 
@@ -91,23 +91,51 @@ const useOutsideClick = (callback: () => void) => {
     return ref;
 }
 
+interface Payment {
+  id: string;
+  amount: number;
+  status: "pending" | "success" | "failed";
+  email: string;
+}
+
 export const BentoGrid = ({ stats }: { stats: AdminStats }) => {
   const [current, setCurrent] = useState<{id: number; heading: string; content: React.ReactNode, SimpleChart?: React.ReactNode, AreaChart?: React.ReactNode, AdminActions?: React.ReactNode, PieChart?: React.ReactNode, DataTable?: React.ReactNode, ActiveUsers?: React.ReactNode, TotalUsers?: React.ReactNode, AdminNotes?: React.ReactNode} | null>(null);
   const reference = useOutsideClick(() => setCurrent(null));
-  const [payments, setPayments] = useState<any[]>([]);
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
 
   useEffect(() => {
     async function fetchData() {
-      const data = await getData();
-      setPayments(data);
-      
-      // Fetch real orders
+      // Fetch real orders and transform to payment format
       try {
-        const ordersData = await adminAPI.getRecentOrders(20);
-        setRecentOrders(ordersData.orders);
+        const response = await adminAPI.getRecentOrders(20);
+        const ordersData = response.data;
+        
+        if (ordersData && ordersData.orders && Array.isArray(ordersData.orders)) {
+          // Transform orders to payment format for the table
+          const transformedPayments: Payment[] = ordersData.orders.map((order: RecentOrder) => {
+            const statusLower = order.status.toLowerCase();
+            let status: "pending" | "success" | "failed" = "pending";
+            if (statusLower === 'completed') status = 'success';
+            else if (statusLower === 'cancelled') status = 'failed';
+            
+            return {
+              id: order.id,
+              amount: order.total,
+              status,
+              email: order.user?.email || 'N/A'
+            };
+          });
+          setPayments(transformedPayments);
+        } else {
+          // Fallback to dummy data
+          const dummyData = await getData();
+          setPayments(dummyData);
+        }
       } catch (error) {
         console.error("Error fetching orders:", error);
+        // Fallback to dummy data if API fails
+        const dummyData = await getData();
+        setPayments(dummyData);
       }
     }
     fetchData();
@@ -287,5 +315,5 @@ export const BentoGrid = ({ stats }: { stats: AdminStats }) => {
         </BentoGridItem>
       </div>
     </div>
-  );``
+  );
 };
