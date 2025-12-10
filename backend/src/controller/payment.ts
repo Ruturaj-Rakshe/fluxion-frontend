@@ -1,16 +1,25 @@
 import Stripe from 'stripe';
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.ts';
-import { send } from 'process';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 class PaymentController {
 
     async createPayment(req: Request, res: Response): Promise<void> {
-        const amount = req.body?.amount;
-        // user id 
+
+        console.log("Stripe Key:", process.env.STRIPE_SECRET_KEY);
+        console.log("Create Payment Request Body:", req.body);
+
+
+
+        const { amount, paymentMethod } = req.body;
         const userId = req.user?.id;
+
+        console.log("User ID:", userId);
+        console.log("Amount:", amount);
+        console.log("Payment Method:", paymentMethod);
+
 
         if (!userId) {
             res.status(401).json({ message: "Unauthorized" });
@@ -27,31 +36,54 @@ class PaymentController {
                 }
             });
 
-            // user -> cart-> fetch 
-
             if (!cart || cart.length === 0) {
                 res.status(400).json({ message: "Cart is empty" });
                 return;
             }
 
-            // Create payment intent with metadata
+            // Determine payment method types based on request
+            const paymentMethodTypes: string[] = ['card'];
+            
+            if (paymentMethod === 'upi') {
+                paymentMethodTypes.push('upi');
+            }
+
+            console.log("Creating payment intent with method types:", paymentMethodTypes);
+            console.log("Stripe Key exists:", !!process.env.STRIPE_SECRET_KEY);
+
+            // Create payment intent with metadata and payment method types
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
                 currency: 'usd',
+                payment_method_types: paymentMethodTypes,
                 metadata: {
                     userId: userId,
-                    cartItemCount: cart.length.toString()
+                    cartItemCount: cart.length.toString(),
+                    paymentMethod: paymentMethod || 'card'
                 }
             });
 
+            console.log("Payment Intent created:", paymentIntent.id);
+
+            console.log("------------Reaching here   1---------------");
             res.status(200).json({ 
                 message: "Payment intent created successfully", 
                 clientSecret: paymentIntent.client_secret 
             });
+
+            console.log("Payment Intent response sent", paymentIntent.client_secret);
+            console.log("------------Reaching here 2---------------");
+
+
             return;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Create payment error:", error);
-            res.status(500).json({ message: "Internal server error", error });
+            console.error("Error details:", error.message);
+            console.error("Stripe Key exists:", !!process.env.STRIPE_SECRET_KEY);
+            res.status(500).json({ 
+                message: "Internal server error", 
+                error: error.message || "Unknown error" 
+            });
             return;
         }
     }
@@ -59,6 +91,7 @@ class PaymentController {
     async webhook(req: Request, res: Response): Promise<void> {
         const sig = req.headers['stripe-signature'] as string;
         const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+        
 
         if (!webhookSecret) {
             console.error('Webhook secret not configured');
