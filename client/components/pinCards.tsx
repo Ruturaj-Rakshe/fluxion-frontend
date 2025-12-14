@@ -8,6 +8,7 @@ import { Template } from "@/lib/index";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import Image from "next/image";
 
 interface ThreeDCardDemoProps {
   template?: Template;
@@ -49,9 +50,14 @@ export function ThreeDCardDemo({ template, children, className }: ThreeDCardDemo
       setAdding(true);
       await addToCart(displayData.id, 1);
       alert("Added to cart successfully!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error adding to cart:", err);
-      alert(err.response?.data?.message || "Failed to add to cart");
+      if (typeof err === "object" && err !== null && "response" in err) {
+        // @ts-expect-error: err.response may exist on some error types
+        alert(err.response?.data?.message || "Failed to add to cart");
+      } else {
+        alert("Failed to add to cart");
+      }
     } finally {
       setAdding(false);
     }

@@ -24,8 +24,7 @@ export const LinkPreview = ({
   className,
   width = 200,
   height = 125,
-  quality = 50,
-  layout = "fixed",
+
   isStatic = false,
   imageSrc,
 }: LinkPreviewProps) => {
@@ -59,8 +58,8 @@ export const LinkPreview = ({
   const x = useMotionValue(0);
   const translateX = useSpring(x, springConfig);
 
-  const handleMouseMove = (event: any) => {
-    const targetRect = event.target.getBoundingClientRect();
+  const handleMouseMove = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    const targetRect = event.currentTarget.getBoundingClientRect();
     const eventOffsetX = event.clientX - targetRect.left;
     const offsetFromCenter = (eventOffsetX - targetRect.width / 2) / 2;
     x.set(offsetFromCenter);
@@ -79,7 +78,7 @@ export const LinkPreview = ({
       </HoverCardPrimitive.Trigger>
 
       <HoverCardPrimitive.Content
-        className="[transform-origin:var(--radix-hover-card-content-transform-origin)]"
+        className="origin-(--radix-hover-card-content-transform-origin)"
         side="top"
         align="center"
         sideOffset={10}

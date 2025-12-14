@@ -42,9 +42,15 @@ export default function Signup() {
       if (response.token) {
         router.push("/");
       }
-    } catch (err: any) {
-      setError(err.message || "Signup failed. Please try again.");
-      console.error("Signup error:", err);
+    }  catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message || "Failed to reset password. Please try again.");
+                console.error("Reset password error:", err);
+            } else {
+                setError("Failed to reset password. Please try again.");
+                console.error("Reset password error:", err);
+            }
+        
     } finally {
       setLoading(false);
     }

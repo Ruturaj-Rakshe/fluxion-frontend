@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
@@ -23,6 +22,7 @@ import { Minus, Plus } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -38,10 +38,8 @@ function PaymentForm() {
     totalPrice: 0,
     itemCount: 0
   });
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'netbanking'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card'>('card');
   const [processingPayment, setProcessingPayment] = useState(false);
-  const [upiId, setUpiId] = useState('');
-  const [selectedBank, setSelectedBank] = useState('');
   const [cardError, setCardError] = useState<string | null>(null);
   const stripe = useStripe();
   const elements = useElements();
@@ -150,6 +148,8 @@ function PaymentForm() {
   };
 
   const handleCheckout = async () => {
+
+    
     if (cartItems.length === 0) {
       alert("Your cart is empty");
       return;
@@ -164,21 +164,22 @@ function PaymentForm() {
     setCardError(null);
 
     try {
+
+      setPaymentMethod('card'); 
       // Create payment intent - Stripe requires amount in cents
       const amountInCents = Math.round(total * 100);
       const response = await paymentAPI.createPaymentIntent(
         amountInCents,
-        paymentMethod === 'upi' ? 'upi' : 'card'
+        'card'
       );
 
-      console.log("Payment Intent Response:", response);
+
+      // secrert key 
 
       if (!response.clientSecret) {
         throw new Error("Failed to create payment intent");
       }
 
-      console.log("Client Secret received:", response.clientSecret);
-      console.log("Proceeding with payment method:", paymentMethod);
 
       // Confirm payment based on method
       if (paymentMethod === 'card') {
@@ -205,14 +206,6 @@ function PaymentForm() {
           // Poll for order creation
           await pollForOrder(paymentIntent.id);
         }
-      } else if (paymentMethod === 'upi') {
-        // UPI with Stripe requires Payment Element or redirect flow
-        alert("UPI payments require Stripe Payment Element integration.\n\nFor now, please use Card payment or integrate Razorpay for native UPI support (GPay, PhonePe, Amazon Pay).");
-        setProcessingPayment(false);
-        return;
-        // TODO: Implement Stripe Payment Element or Razorpay UPI integration
-      } else if (paymentMethod === 'netbanking') {
-        alert("Net Banking - Please implement with Razorpay or similar gateway");
       }
     } catch (err: unknown) {
       console.error("Payment error:", err);
@@ -248,27 +241,8 @@ function PaymentForm() {
           return;
         }
       } catch {
-        console.log(`Polling attempt ${i + 1}/${maxAttempts}`);
+        // console.log(`Polling attempt ${i + 1}/${maxAttempts}`);
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    
-    // Webhook hasn't created order - create it manually for local dev
-    try {
-      console.log("Creating order manually (webhook not received)");
-      const orderResponse = await orderAPI.createOrder({
-        paymentId: paymentIntentId,
-        paymentRef: `ref_${Date.now()}`
-      });
-      
-      if (orderResponse?.order) {
-        alert(`Order created successfully! Order ID: ${orderResponse.order.id}`);
-        await refreshCart();
-        router.push('/orders');
-        return;
-      }
-    } catch (error) {
-      console.error("Failed to create order:", error);
     }
     
     alert("Payment successful! Order is being processed. Check your orders page.");
@@ -282,9 +256,9 @@ function PaymentForm() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
     >
       <div className="min-h-screen bg-black text-white px-4 py-36">
         <Navbar />
@@ -292,7 +266,44 @@ function PaymentForm() {
           <h1 className="text-3xl font-bold mb-8 text-center bbh-sans-bartle">Your Cart</h1>
 
           {loading ? (
-            <p className="text-center text-gray-400">Loading cart...</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Cart Items Skeleton */}
+              <div className="lg:col-span-2 space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                    <div className="flex items-center gap-4">
+                      <Skeleton className="w-20 h-20 rounded-xl" />
+                      <div className="flex-1 space-y-3">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-4 w-1/4" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Order Summary Skeleton */}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4 h-fit">
+                <Skeleton className="h-6 w-2/3 mb-4" />
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex justify-between">
+                      <Skeleton className="h-4 w-1/3" />
+                      <Skeleton className="h-4 w-1/4" />
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-zinc-700 pt-4">
+                  <Skeleton className="h-6 w-full" />
+                </div>
+                <div className="space-y-3 pt-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-32 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              </div>
+            </div>
           ) : error ? (
             <p className="text-center text-red-500">{error}</p>
           ) : cartItems.length === 0 ? (
@@ -309,20 +320,26 @@ function PaymentForm() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Cart Items */}
               <div className="lg:col-span-2 space-y-4">
-                {cartItems.map((item) => (
-                  <div
+                {cartItems.map((item, index) => (
+                  <motion.div
                     key={item.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
                     className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-4"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-zinc-700">
+
+                      {/* LOOK HERE */}
+                      {/* FETCH REAL PHOTOS */}
+                      {/* <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-zinc-700">
                         <Image
                           src={item.tempelate.thumbnailUrl}
                           alt={item.tempelate.title}
                           fill
                           className="object-cover"
                         />
-                      </div>
+                      </div> */}
                       <div>
                         <h2 className="font-semibold text-lg">{item.tempelate.title}</h2>
                         {item.tempelateDetail && (
@@ -362,12 +379,17 @@ function PaymentForm() {
                     >
                       Remove
                     </Button>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
 
               {/* Cart Summary */}
-              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4 h-fit">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4 h-fit"
+              >
                 <h2 className="text-xl font-semibold mb-2">Order Summary</h2>
 
                 <div className="space-y-2 text-sm">
@@ -397,38 +419,7 @@ function PaymentForm() {
                 {/* Payment Method Selection */}
                 <div className="border-t border-zinc-700 pt-4 space-y-3">
                   <h3 className="font-semibold text-sm">Payment Method</h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setPaymentMethod('card')}
-                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                        paymentMethod === 'card'
-                          ? 'bg-white text-black'
-                          : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
-                      }`}
-                    >
-                      Card
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod('upi')}
-                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                        paymentMethod === 'upi'
-                          ? 'bg-white text-black'
-                          : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
-                      }`}
-                    >
-                      UPI
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod('netbanking')}
-                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                        paymentMethod === 'netbanking'
-                          ? 'bg-white text-black'
-                          : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
-                      }`}
-                    >
-                      Net Banking
-                    </button>
-                  </div>
+                  
 
                   {/* Card Payment Input */}
                   {paymentMethod === 'card' && (
@@ -455,45 +446,6 @@ function PaymentForm() {
                       {cardError && (
                         <p className="text-red-500 text-sm">{cardError}</p>
                       )}
-                    </div>
-                  )}
-
-                  {/* UPI Payment Input */}
-                  {paymentMethod === 'upi' && (
-                    <div className="space-y-2">
-                      <label className="text-sm text-gray-400">UPI ID</label>
-                      <input
-                        type="text"
-                        placeholder="yourname@upi"
-                        value={upiId}
-                        onChange={(e) => setUpiId(e.target.value)}
-                        className="w-full p-3 bg-zinc-800 rounded-lg border border-zinc-700 text-white placeholder-gray-400 focus:outline-none focus:border-white"
-                      />
-                      <p className="text-xs text-gray-500">
-                        Note: UPI payments redirect to payment gateway
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Net Banking Input */}
-                  {paymentMethod === 'netbanking' && (
-                    <div className="space-y-2">
-                      <label className="text-sm text-gray-400">Select Bank</label>
-                      <select
-                        value={selectedBank}
-                        onChange={(e) => setSelectedBank(e.target.value)}
-                        className="w-full p-3 bg-zinc-800 rounded-lg border border-zinc-700 text-white focus:outline-none focus:border-white"
-                      >
-                        <option value="">Select your bank</option>
-                        <option value="sbi">State Bank of India</option>
-                        <option value="hdfc">HDFC Bank</option>
-                        <option value="icici">ICICI Bank</option>
-                        <option value="axis">Axis Bank</option>
-                        <option value="kotak">Kotak Mahindra Bank</option>
-                      </select>
-                      <p className="text-xs text-gray-500">
-                        Net Banking requires integration with payment gateway
-                      </p>
                     </div>
                   )}
                 </div>
@@ -535,7 +487,7 @@ function PaymentForm() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              </div>
+              </motion.div>
             </div>
           )}
         </div>

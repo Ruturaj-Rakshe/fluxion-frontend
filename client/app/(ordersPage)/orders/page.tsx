@@ -6,6 +6,7 @@ import { Navbar } from "@/components/Navbarr";
 import { orderAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,9 +51,15 @@ function OrdersPageContent() {
       if (response.orders) {
         setOrders(response.orders);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching orders:", err);
-      if (err.response?.status === 401) {
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof (err as { response?: { status?: number } }).response === "object" &&
+        (err as { response?: { status?: number } }).response?.status === 401
+      ) {
         setError("Please login to view your orders");
         router.push("/signin");
       } else {
@@ -69,10 +76,16 @@ function OrdersPageContent() {
       await orderAPI.cancelOrder(orderId);
       alert("Order cancelled successfully!");
       await fetchOrders(); // Refresh orders
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error cancelling order:", err);
-      if (err.response?.data?.message) {
-        alert(err.response.data.message);
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof (err as { response?: { data?: { message?: string } } }).response === "object" &&
+        (err as { response?: { data?: { message?: string } } }).response?.data?.message
+      ) {
+        alert((err as { response: { data: { message: string } } }).response.data.message);
       } else {
         alert("Failed to cancel order. Please try again.");
       }
@@ -125,8 +138,45 @@ function OrdersPageContent() {
           </div>
 
           {loading ? (
-            <div className="text-center py-20">
-              <p className="text-gray-400 text-xl">Loading orders...</p>
+            <div className="space-y-6"> 
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                  {/* Order Header Skeleton */}
+                  <div className="flex flex-wrap justify-between items-start gap-4 mb-4 pb-4 border-b border-zinc-800">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-48" />
+                    </div>
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                    </div>
+                  </div>
+
+                  {/* Order Items Skeleton */}
+                  <div className="space-y-3 mb-4">
+                    {[1, 2].map((j) => (
+                      <div key={j} className="flex justify-between items-center py-2">
+                        <div className="space-y-2 flex-1">
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-3 w-1/2" />
+                        </div>
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Order Footer Skeleton */}
+                  <div className="flex justify-between items-center pt-4 border-t border-zinc-800">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-10 w-28" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div className="text-center py-20">

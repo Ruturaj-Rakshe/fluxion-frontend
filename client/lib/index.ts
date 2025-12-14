@@ -1,4 +1,3 @@
-
 export interface RegisterData {
   name: string;
   email: string;
@@ -32,11 +31,11 @@ export interface UpdateProfileData {
   avatarUrl?: string;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   message: string;
   user?: T;
   token?: string;
-  errors?: any;
+  errors?: string[];
 }
 
 export interface Template {
@@ -145,7 +144,7 @@ export interface OrderItem {
   tempelate: {
     id: string;
     title: string;
-    thumbnailUrl: string;
+    thumbnailUrl: string
   };
   tempelateDetail?: {
     id: string;

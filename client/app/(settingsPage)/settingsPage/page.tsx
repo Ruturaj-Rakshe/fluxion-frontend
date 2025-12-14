@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbarr";
 import { authAPI, orderAPI } from "@/lib/api";
 import { UserProfile, UpdateProfileData } from "@/lib";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -42,7 +43,11 @@ export default function SettingsPage() {
     try {
       const response = await authAPI.getProfile();
       if (response.user) {
-        setProfile(response.user);
+        if (response.user && Object.keys(response.user).length > 0) {
+          setProfile(response.user as UserProfile);
+        } else {
+          setProfile(null);
+        }
       }
       setLoading(false);
     } catch (error: unknown) {
@@ -202,56 +207,56 @@ export default function SettingsPage() {
         <Navbar className="" />
         <div className="grid grid-cols-1 sm:grid-cols-2 w-full mt-24">
           <div className="pt-5">
-            <div className="h-10 w-64 bg-linear-to-r from-purple-500/20 to-pink-500/20 rounded animate-pulse"></div>
-            <div className="h-6 w-48 bg-purple-300/20 rounded mt-2 ml-4 animate-pulse"></div>
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-6 w-48 mt-2 ml-4" />
           </div>
         </div>
 
         <div className="mt-10 flex gap-2 justify-center">
           {/* LEFT CARD SKELETON */}
           <div className="bg-linear-to-br from-[#04071D] to-[#0C0E23] border border-white/10 h-[60vh] w-[32%] rounded-2xl">
-            <div className="h-7 w-48 bg-linear-to-r from-purple-500/20 to-pink-500/20 rounded mx-auto mt-2.5 animate-pulse"></div>
-            <div className="h-4 w-32 bg-purple-200/20 rounded mx-auto mt-4 animate-pulse"></div>
+            <Skeleton className="h-7 w-48 mx-auto mt-2.5" />
+            <Skeleton className="h-4 w-32 mx-auto mt-4" />
             <div className="flex justify-center mt-8">
-              <div className="w-32 h-32 rounded-full bg-purple-500/20 animate-pulse"></div>
+              <Skeleton className="w-32 h-32 rounded-full" />
             </div>
-            <div className="h-3 w-56 bg-linear-to-r from-purple-500/20 to-pink-500/20 rounded mx-auto mt-3 animate-pulse"></div>
+            <Skeleton className="h-3 w-56 mx-auto mt-3" />
           </div>
 
           {/* RIGHT CARD SKELETON */}
           <div className="bg-linear-to-br from-[#04071D] to-[#0C0E23] border border-white/10 h-[60vh] w-[64%] rounded-2xl">
-            <div className="h-6 w-48 bg-linear-to-r from-purple-500/20 to-pink-500/20 rounded mx-auto mt-2.5 animate-pulse"></div>
+            <Skeleton className="h-6 w-48 mx-auto mt-2.5" />
             
             <div className="grid grid-cols-1 sm:grid-cols-2 w-full m-4 gap-8">
               {/* COLUMN 1 SKELETON */}
               <div className="space-y-6">
                 <div>
-                  <div className="h-5 w-20 bg-linear-to-r from-purple-500/20 to-pink-500/20 rounded mb-2 animate-pulse"></div>
-                  <div className="h-8 w-48 bg-purple-300/20 rounded animate-pulse"></div>
+                  <Skeleton className="h-5 w-20 mb-2" />
+                  <Skeleton className="h-8 w-48" />
                 </div>
                 <div>
-                  <div className="h-5 w-20 bg-linear-to-r from-purple-500/20 to-pink-500/20 rounded mb-2 animate-pulse"></div>
-                  <div className="h-8 w-56 bg-purple-300/20 rounded animate-pulse"></div>
+                  <Skeleton className="h-5 w-20 mb-2" />
+                  <Skeleton className="h-8 w-56" />
                 </div>
                 <div>
-                  <div className="h-5 w-32 bg-linear-to-r from-purple-500/20 to-pink-500/20 rounded mb-2 animate-pulse"></div>
-                  <div className="h-8 w-40 bg-purple-300/20 rounded animate-pulse"></div>
+                  <Skeleton className="h-5 w-32 mb-2" />
+                  <Skeleton className="h-8 w-40" />
                 </div>
               </div>
 
               {/* COLUMN 2 SKELETON */}
               <div className="space-y-6">
                 <div>
-                  <div className="h-5 w-20 bg-linear-to-r from-purple-500/20 to-pink-500/20 rounded mb-2 animate-pulse"></div>
-                  <div className="h-8 w-16 bg-purple-300/20 rounded animate-pulse"></div>
+                  <Skeleton className="h-5 w-20 mb-2" />
+                  <Skeleton className="h-8 w-16" />
                 </div>
                 <div>
-                  <div className="h-5 w-28 bg-linear-to-r from-purple-500/20 to-pink-500/20 rounded mb-2 animate-pulse"></div>
-                  <div className="h-8 w-44 bg-purple-300/20 rounded animate-pulse"></div>
+                  <Skeleton className="h-5 w-28 mb-2" />
+                  <Skeleton className="h-8 w-44" />
                 </div>
                 <div>
-                  <div className="h-5 w-32 bg-linear-to-r from-purple-500/20 to-pink-500/20 rounded mb-2 animate-pulse"></div>
-                  <div className="h-8 w-36 bg-purple-300/20 rounded animate-pulse"></div>
+                  <Skeleton className="h-5 w-32 mb-2" />
+                  <Skeleton className="h-8 w-36" />
                 </div>
               </div>
             </div>
@@ -276,7 +281,7 @@ export default function SettingsPage() {
     <section className="p-6 bg-black min-h-screen">
       <Navbar className="" />
       <div className="grid grid-cols-1 sm:grid-cols-2 w-full mt-24">
-        <div className="pt-5">
+        <div className="pt-5 pl-5">
           <h1 className="text-gradient text-4xl font-bold zalando-sans-expanded">
             Greetings {profile.name}!
           </h1>

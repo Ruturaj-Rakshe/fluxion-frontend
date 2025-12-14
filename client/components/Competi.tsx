@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useEffect } from "react";
-import { TypewriterEffect } from "./ui/typewriter-effect";
+import  TypewriterEffect  from "./ui/typewriter-effect";
 import { wordsBee } from "./utils";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
@@ -9,7 +9,10 @@ gsap.registerPlugin(ScrollTrigger);
 
 export function Competi() {
   const sectionRef = useRef<HTMLDivElement | null>(null);
-  const typeRef = useRef<any>(null);
+  interface TypewriterEffectHandle {
+    startTyping: () => void;
+  }
+  const typeRef = useRef<TypewriterEffectHandle | null>(null);
 
   useEffect(() => {
     if (!sectionRef.current || !typeRef.current) return;
@@ -18,7 +21,7 @@ export function Competi() {
       trigger: sectionRef.current,
       start: "top 80%", // when top of section hits 80% of viewport
       onEnter: () => {
-        typeRef.current.startTyping(); // trigger typewriter
+        typeRef.current?.startTyping(); // trigger typewriter
       },
     });
   }, []);
@@ -42,7 +45,6 @@ export function Competi() {
         <div className="grid grid-cols-12 w-full gap-8 items-start">
           <div className="col-span-12 md:col-span-6 flex flex-col gap-5 items-center">
             <TypewriterEffect
-              ref={typeRef}
               words={wordsBee}
               className="text-white text-center bbh-sans-bartle sm:text-xl md:text-2xl pt-2"
             />

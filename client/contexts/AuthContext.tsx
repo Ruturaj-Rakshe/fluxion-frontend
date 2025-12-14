@@ -34,9 +34,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const response = await authAPI.getProfile();
-      if (response.user) {
-        setUser(response.user);
+      const response = await authAPI.getProfile() ;
+      if (response.user && Object.keys(response.user).length > 0) {
+        setUser(response.user as User);
+      } else {
+        setUser(null);
       }
     } catch (error) {
       // User not logged in or token expired
@@ -48,15 +50,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await authAPI.signin({ email, password });
+    if(!response.user) return;
     if (response.user) {
-      setUser(response.user);
+      setUser(response.user as User);
+    } else {
+      setUser(null);
     }
   };
 
   const signup = async (name: string, email: string, password: string) => {
     const response = await authAPI.signup({ name, email, password });
     if (response.user) {
-      setUser(response.user);
+      setUser(response.user as User);
     }
   };
 

@@ -3,8 +3,7 @@
 import { LampContainer } from "@/components/ui/lamp";
 import { WobbleCardDemo } from "@/components/wobblyWibbly";
 import { motion } from "framer-motion";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+
 import { Navbar } from "@/components/Navbarr";
 import ButtonFooter from "@/components/ButtonFooter";
 

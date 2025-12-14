@@ -31,10 +31,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'res.cloudinary.com', // For Cloudinary if used
       },
-        {
+      {
         protocol: 'https',
-        hostname: 'chililabs.io',
-      },
+        hostname: 'chililabs.io', // For template thumbnails
+      }
     ],
   }
 };

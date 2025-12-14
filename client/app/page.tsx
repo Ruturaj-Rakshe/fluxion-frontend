@@ -1,33 +1,39 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import gsap from 'gsap';
 import { ScrollTrigger, SplitText } from 'gsap/all';
-import { Competi } from '@/components/Competi';
-import { AppleCardsCarouselDemo } from '@/components/AppleCards';
 import { MegaButton } from '@/components/ui/megaButton';
-import Accordion from '@/components/ui/Accordion';
-import { PricingCard } from '@/components/ui/PricingCard';
-import Approach from '@/components/CanvasDemo';
 import { faqData } from '@/components/utils';
-import { DottedGlowBackgroundDemoSecond } from '@/components/DottedBack';
 import ScrollContext from './ScrollContext';
-import ButtonFooter from '@/components/ButtonFooter';
 import { Navbar } from '@/components/Navbarr';
+
+// Lazy load components - loads only when user scrolls to them
+const Competi = dynamic(() => import('@/components/Competi').then(m => m.Competi), { ssr: false });
+const AppleCardsCarouselDemo = dynamic(() => import('@/components/AppleCards').then(m => m.AppleCardsCarouselDemo), { ssr: false });
+const Accordion = dynamic(() => import('@/components/ui/Accordion'), { ssr: false });
+const PricingCard = dynamic(() => import('@/components/ui/PricingCard').then(m => m.PricingCard), { ssr: false });
+const Approach = dynamic(() => import('@/components/CanvasDemo'), { ssr: false });
+const DottedGlowBackgroundDemoSecond = dynamic(() => import('@/components/DottedBack').then(m => m.DottedGlowBackgroundDemoSecond), { ssr: false });
+const ButtonFooter = dynamic(() => import('@/components/ButtonFooter'), { ssr: false });
 
 
 
 
 export default function Home() {
-  const [heroReady, setHeroReady] = useState(false);
   const insideMaskRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
-
-
-
+  
   useEffect(() => {
     gsap.registerPlugin(SplitText, ScrollTrigger);
     ScrollTrigger.getAll().forEach(trigger => trigger.kill());
     ScrollTrigger.clearScrollMemory();
+    
+    // Configure ScrollTrigger for better performance
+    ScrollTrigger.config({
+      autoRefreshEvents: "visibilitychange,DOMContentLoaded,load",
+      ignoreMobileResize: true
+    });
 
     const title = new SplitText(".title", { type: "chars" });
     title.chars.forEach((char) => char.classList.add("text-gradient"));
@@ -36,22 +42,19 @@ export default function Home() {
     if (!video) return;
 
     video.addEventListener('loadeddata', () => {
-      setHeroReady(true);
       gsap.to(video, {
-        currentTime: video.duration || 5, // fallback
+        currentTime: video.duration || 5,
         ease: "none",
         scrollTrigger: {
           trigger: "#hero",
           start: "top top",
           end: "bottom top",
-          scrub: true,
-          pin: true
+          scrub: 0.5, // Reduced scrub for smoother performance
+          pin: true,
+          anticipatePin: 1
         },
       })
-    })
-    setTimeout(() => setHeroReady(true), 2000);
-
-
+    });
 
     gsap.fromTo(
       title.chars,
@@ -66,7 +69,7 @@ export default function Home() {
     );
 
     gsap.fromTo("#globeone .parallel",
-      { y: 100 },
+      { y: 100, willChange: "transform" },
       {
         y: -100,
         ease: "none",
@@ -74,12 +77,13 @@ export default function Home() {
           trigger: "#globeone",
           start: "top center",
           end: "bottom top",
-          scrub: true,
+          scrub: 0.5,
+          invalidateOnRefresh: true
         },
       });
 
     gsap.fromTo("#globeone .text-parallax",
-      { y: -100 },
+      { y: -100, willChange: "transform" },
       {
         y: 80,
         ease: "none",
@@ -87,13 +91,14 @@ export default function Home() {
           trigger: "#globeone",
           start: "top top",
           end: "bottom top",
-          scrub: true
+          scrub: 0.5,
+          invalidateOnRefresh: true
         },
       }
     );
 
     gsap.fromTo("#globesecond .text-parallax-second",
-      { y: 300 },
+      { y: 300, willChange: "transform" },
       {
         y: -10,
         ease: "none",
@@ -101,13 +106,14 @@ export default function Home() {
           trigger: "#globesecond",
           start: "top top",
           end: "bottom top",
-          scrub: true,
+          scrub: 0.5,
+          invalidateOnRefresh: true
         },
       }
     );
 
     gsap.fromTo("#globesecond .parallel-second",
-      { y: -100 },
+      { y: -100, willChange: "transform" },
       {
         y: 100,
         ease: "none",
@@ -115,7 +121,8 @@ export default function Home() {
           trigger: "#globesecond",
           start: "top center",
           end: "bottom top",
-          scrub: true
+          scrub: 0.5,
+          invalidateOnRefresh: true
         },
       }
     );
@@ -125,9 +132,11 @@ export default function Home() {
         trigger: '#portal',
         start: 'top top',
         end: 'bottom top',
-        scrub: 1.5,
+        scrub: 1,
         pin: true,
         pinSpacing: true,
+        anticipatePin: 1,
+        invalidateOnRefresh: true
       }
     });
 
@@ -138,6 +147,7 @@ export default function Home() {
       "-webkit-mask-size": '400%',
       duration: 1,
       ease: 'power1.inOut',
+      willChange: 'transform, mask-size'
     });
 
     if (insideMaskRef.current) {
@@ -162,10 +172,10 @@ export default function Home() {
       // Smoothly fade in the portal section after layout settles
       gsap.to("#portal", {
         opacity: 1,
-        duration: 1,
+        duration: 0.6,
         ease: "power2.out",
       });
-    }, 800);
+    }, 400);
 
 
   }, []);
@@ -184,8 +194,8 @@ export default function Home() {
               autoPlay
               loop
               playsInline
-              className='absolute inset-0 w-full h-full object-cover'>
-
+              preload="metadata"
+              className='absolute inset-0 w-full h-full object-cover will-change-[current-time]'>
             </video>
             <h1 className={`bbh-sans-bartle text-3xl md:text-7xl text-gradient title transition-opacity duration-700`}>
               Fluxion
@@ -194,9 +204,6 @@ export default function Home() {
           </div>
           <div className="absolute bottom-0 left-0 w-full h-[40vh] bg-linear-to-b from-transparent via-black/50 to-black pointer-events-none z-5" />
         </section>
-
-
-
 
         {/* PORTAL */}
 

@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import reactElementToJSXString from "react-element-to-jsx-string";
+// import reactElementToJSXString from "react-element-to-jsx-string";
 import { toast, Toaster } from "sonner";
 import { Button } from "./ui/button";
 
@@ -10,10 +10,10 @@ export function TailwindcssButtons() {
       copyToClipboard(button.code);
       return;
     }
-    let buttonString = reactElementToJSXString(button.component);
+    const buttonString = (button.component);
 
     if (buttonString) {
-      const textToCopy = buttonString;
+      const textToCopy = buttonString as string;
       copyToClipboard(textToCopy);
     }
   };

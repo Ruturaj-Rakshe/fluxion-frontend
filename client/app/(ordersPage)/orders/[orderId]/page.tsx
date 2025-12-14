@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -6,8 +7,9 @@ import { Navbar } from "@/components/Navbarr";
 import { orderAPI } from "@/lib/api";
 import { Order } from "@/lib/index";
 import { useRouter, useParams } from "next/navigation";
-import Image from "next/image";
+// import Image from "next/image";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import Image from "next/image";
 
 function OrderDetailsPageContent() {
   const router = useRouter();
@@ -30,35 +33,37 @@ function OrderDetailsPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
-  useEffect(() => {
-    if (orderId) {
-      fetchOrderDetails();
-    }
-  }, [orderId]);
-
-  const fetchOrderDetails = async () => {
+  const fetchOrderDetails = React.useCallback(async () => {
     try {
       setLoading(true);
       const response = await orderAPI.getOrderById(orderId);
       if (response.order) {
         setOrder(response.order);
       }
-    } catch (err: any) {
-      console.error("Error fetching order:", err);
-      if (err.response?.status === 401) {
-        setError("Please login to view order details");
+    } catch (err: unknown) {
+      console.error("Error fetching orders:", err);
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof (err as { response?: { status?: number } }).response === "object" &&
+        (err as { response?: { status?: number } }).response?.status === 401
+      ) {
+        setError("Please login to view your orders");
         router.push("/signin");
-      } else if (err.response?.status === 403) {
-        setError("Access denied");
-      } else if (err.response?.status === 404) {
-        setError("Order not found");
       } else {
-        setError("Failed to load order. Please try again.");
+        setError("Failed to load orders. Please try again.");
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId, router]);
+
+  useEffect(() => {
+    if (orderId) {
+      fetchOrderDetails();
+    }
+  }, [orderId, fetchOrderDetails]);
 
   const handleCancelOrder = async () => {
     try {
@@ -66,10 +71,16 @@ function OrderDetailsPageContent() {
       await orderAPI.cancelOrder(orderId);
       alert("Order cancelled successfully!");
       await fetchOrderDetails(); // Refresh order details
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error cancelling order:", err);
-      if (err.response?.data?.message) {
-        alert(err.response.data.message);
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof (err as { response?: { data?: { message?: string } } }).response === "object" &&
+        (err as { response?: { data?: { message?: string } } }).response?.data?.message
+      ) {
+        alert((err as { response: { data: { message: string } } }).response.data.message);
       } else {
         alert("Failed to cancel order. Please try again.");
       }
@@ -103,8 +114,72 @@ function OrderDetailsPageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <p className="text-xl">Loading order details...</p>
+      <div className="min-h-screen bg-black text-white px-4 py-10">
+        <Navbar />
+        <div className="max-w-4xl mx-auto py-24">
+          {/* Header Skeleton */}
+          <div className="mb-8">
+            <Skeleton className="h-10 w-48" />
+          </div>
+
+          {/* Order Info Card Skeleton */}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-5 w-48" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-8 w-24 rounded-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-40" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-8 w-32" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-56" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+            </div>
+          </div>
+
+          {/* Order Items Skeleton */}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+            <Skeleton className="h-7 w-32 mb-4" />
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-4 bg-zinc-800/50 rounded-lg p-4">
+                  <Skeleton className="w-20 h-20 rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <div className="space-y-2 text-right">
+                    <Skeleton className="h-6 w-20 ml-auto" />
+                    <Skeleton className="h-3 w-16 ml-auto" />
+                    <Skeleton className="h-4 w-24 ml-auto" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-zinc-700 mt-6 pt-4">
+              <div className="flex justify-between items-center">
+                <Skeleton className="h-7 w-32" />
+                <Skeleton className="h-7 w-28" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -231,12 +306,13 @@ function OrderDetailsPageContent() {
                   key={item.id}
                   className="flex items-center gap-4 bg-zinc-800/50 rounded-lg p-4"
                 >
-                  <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-zinc-700 flex-shrink-0">
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-zinc-700 shrink-0">
                     <Image
                       src={item.tempelate.thumbnailUrl}
                       alt={item.tempelate.title}
                       fill
                       className="object-cover"
+
                     />
                   </div>
                   <div className="flex-1">

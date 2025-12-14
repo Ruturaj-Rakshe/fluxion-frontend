@@ -3,11 +3,9 @@ import axios from "axios";
 import { 
   ApiResponse, 
   LoginData, 
-  RegisterData, 
-  TemplateDetail, 
+  RegisterData,
   TemplateDetailResponse, 
   TemplateResponse,
-  CartItem,
   CartResponse,
   AddToCartData,
   OrderResponse,

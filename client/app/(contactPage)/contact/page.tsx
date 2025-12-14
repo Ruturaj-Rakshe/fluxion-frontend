@@ -5,11 +5,25 @@ import Accordion from "@/components/ui/Accordion";
 import { faqData } from "@/components/utils";
 import { Navbar } from "@/components/Navbarr";
 
+interface ContactPageProps {
+    EmailAddressText: string;
+  PasswordText: string;
+  NameText: string;
+  ButtonText: string;
+  HeaderText: string;
+  TextBelowHeader: string;    
+  LoginText: string;
+  onSubmit?: (data: { name: string; email: string; password: string }) => Promise<void>;  
+  error: string;
+  loading?: boolean;
+  showForgotPassword?: boolean;
+}
+
 export default function ContactPage() {
   return <div className="min-h-screen items-center justify-center bg-black">
     <Navbar />
       <div className="flex items-center justify-center pt-20">
-      <SignupFormDemo {...({} as any)} />
+      <SignupFormDemo {...({} as ContactPageProps)} />
     </div>
     
     <div>
