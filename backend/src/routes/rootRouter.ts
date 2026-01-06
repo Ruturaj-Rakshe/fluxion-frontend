@@ -23,6 +23,9 @@ class AppRoutes {
         this.router.use("/orders", orderRoutes);
         this.router.use("/admin", adminRoutes);
         this.router.use("/payment", paymentRoutes);
+
+        // this.router.use("/kyc", kycRoutes)
+        // this.router.use("/create-cred", reportRoutes)
         
     }
 }

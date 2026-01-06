@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { AdminLoginData, AdminStatsResponse, RecentOrder, RecentUser } from './index';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

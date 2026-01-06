@@ -190,6 +190,8 @@ export default function TemplatesPage() {
                   <div className="relative h-48 w-full bg-slate-800 rounded-t-lg overflow-hidden">
                     {template.thumbnailUrl ? (
                       <Image
+                      width={400}
+                      height={300}
                         src={template.thumbnailUrl}
                         alt={template.title}
                         className="w-full h-full object-cover"
